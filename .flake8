@@ -1,0 +1,5 @@
+[flake8]
+ignore = E265,E126
+max-line-length = 120
+
+# vim: ft=dosini

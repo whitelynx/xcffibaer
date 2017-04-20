@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+import os
+import time
+
+import xcffib
+import xcffib.render
+
+from xcffibär.sourcePatterns import Color
+from xcffibär.Theme import Theme
+from xcffibär.atoms import initAtoms
+from xcffibär.utils import Perimeter, QuitApplication, inspect
+from xcffibär.timers import addInterval, triggerElapsedTimers
+from xcffibär import Bar, chunks
+
+
+def run():
+    conn = xcffib.connect(display=os.getenv('DISPLAY'))
+    conn.render = conn(xcffib.render.key)
+
+    screens = conn.get_screen_pointers()
+
+    initAtoms(conn)
+
+    screenIndex = 0
+    rootDepth = screens[screenIndex].root_depth
+    rootVisual = screens[screenIndex].root_visual
+
+    depthInfo = [
+        d
+        for d in conn.get_setup().roots.list[screenIndex].allowed_depths.list
+        if d.depth == rootDepth
+    ][0]
+
+    visualType = [
+        v
+        for v in depthInfo.visuals.list
+        if v.visual_id == rootVisual
+    ][0]
+
+    windows = {}
+
+    theme = Theme({
+        'foreground': Color('8f8'),
+        'background': Color('030'),
+        'defaultChunkStyle': {
+            'foreground': Color('fff'),
+            'background': Color('000'),
+            #'fontFamily': 'monospace',
+            'fontFamily': 'Input Mono',
+        },
+        'chunkStyles': {
+            'title': {
+                'foreground': Color('555'),
+                'fontSize': '10px',
+                'padding': Perimeter(3),
+            },
+            'Text': {
+                'fontSize': '15px',
+                'padding': Perimeter(0),
+            },
+            'clock': {
+                'foreground': Color('999'),
+                'fontSize': '14px',
+                'padding': Perimeter(1),
+            },
+            'icon': {
+                'padding': Perimeter(1),
+            },
+            'icon-info': {
+                'background': Color('888'),
+                'padding': Perimeter(1),
+            },
+            'icon-active': {
+                'background': Color('080'),
+                'padding': Perimeter(1),
+            },
+            'icon-inactive': {
+                'background': Color('555'),
+                'padding': Perimeter(1),
+            },
+        },
+    })
+
+    bar = Bar(conn, screens[screenIndex], visualType, theme)
+    windows[bar.id] = bar
+
+    bar.addChunkLeft(chunks.Text('xcffibär', class_='title'))
+
+    #bar.addChunkCenter(chunks.Text('xcffibär', class_='title'))
+
+    clock = chunks.Text(time.strftime('%Y-%m-%d %H:%M:%S'), class_='clock')
+
+    def updateClock():
+        print('\x1b[1;35mupdateClock()\x1b[m')
+        clock.text = time.strftime('%Y-%m-%d %H:%M:%S')
+        bar.paint()
+
+    addInterval(1, updateClock)
+
+    bar.addChunkRight(clock)
+    #bar.addChunkRight(chunks.Image('/usr/share/icons/Moka/16x16/apps/clock.png', class_='icon'))
+    bar.addChunkRight(chunks.Image('/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
+                                   class_='icon-info'))
+
+    bar.addChunkRight(chunks.Separator(width=8, height=18))
+
+    bar.addChunkRight(chunks.Text('192.168.128.98'))
+    bar.addChunkRight(chunks.Image('/usr/share/icons/Adwaita/16x16/devices/network-wired-symbolic.symbolic.png',
+                                   class_='icon-active'))
+
+    bar.addChunkRight(chunks.Separator(width=8, height=18))
+
+    bar.addChunkRight(chunks.Text(''))
+    bar.addChunkRight(chunks.Image('/usr/share/icons/Adwaita/16x16/devices/network-wireless-symbolic.symbolic.png',
+                                   class_='icon-inactive'))
+
+    while True:
+        try:
+            #event = conn.wait_for_event()
+            event = conn.poll_for_event()
+        except xcffib.ProtocolException as error:
+            print("\x1b[91mProtocol error %s received!\x1b[m" % (error.__class__.__name__, ))
+            break
+        except Exception as error:
+            print("\x1b[91mUnexpected %s received:\x1b[m %s" % (error.__class__.__name__, error))
+            for key in dir(error):
+                val = getattr(error, key)
+                if not callable(val):
+                    print('  %s: %r' % (key, val))
+            break
+
+        if event:
+            print('\x1b[93mIncoming %s:\x1b[m' % (event.__class__.__name__, ))
+            inspect(event)
+
+            windowID = event.window if hasattr(event, 'window') else event.event
+            try:
+                windows[windowID].handleEvent(event)
+            except QuitApplication:
+                break
+
+        elif conn.has_error():
+            print("\x1b[91mConnection error received!\x1b[m")
+            break
+
+        else:
+            time.sleep(0.05)
+
+        triggerElapsedTimers()
+
+    for window in windows.values():
+        window.cleanUp()
+
+    conn.disconnect()
+
+
+run()
