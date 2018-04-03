@@ -5,13 +5,106 @@ import time
 
 import xcffib
 import xcffib.render
+import xcffib.randr
 
 from xcffibär.sourcePatterns import Color
 from xcffibär.Theme import Theme
 from xcffibär.atoms import initAtoms
 from xcffibär.utils import Perimeter, QuitApplication, inspect
 from xcffibär.timers import addInterval, triggerElapsedTimers
-from xcffibär import Bar, chunks
+from xcffibär import Bar, chunks, Window
+
+
+theme = Theme({
+    'foreground': Color('8f8'),
+    'background': Color('222'),
+    'defaultChunkStyle': {
+        'foreground': Color('fff'),
+        'background': Color('000'),
+        #'fontFamily': 'monospace',
+        'fontFamily': 'Input Mono',
+    },
+    'chunkStyles': {
+        # Text styles
+        'Text': {
+            'fontSize': '11px',
+            'padding': Perimeter(0, 12, -1, 4),
+        },
+        'title': {
+            'foreground': Color('555'),
+            'fontSize': '8px',
+            'padding': Perimeter(3),
+        },
+        'net-address': {
+            'fontSize': '11px',
+        },
+        'clock': {
+            'foreground': Color('999'),
+            'fontSize': '10px',
+            'padding': Perimeter(0, 4),
+        },
+
+        # Image styles
+        'icon': {
+            'padding': Perimeter(0, 1, 1, 1),
+        },
+        'icon-clock': {
+            'image': '/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
+            'padding': Perimeter(1, 0, 0, 1),
+            'background': Color('448'),
+        },
+        'icon-net-wired': {
+            'image': '/usr/share/icons/Adwaita/16x16/devices/network-wired-symbolic.symbolic.png',
+            'padding': Perimeter(0, 0, 1, 1),
+        },
+        'icon-net-wireless': {
+            'image': '/usr/share/icons/Adwaita/16x16/devices/network-wireless-symbolic.symbolic.png',
+            'padding': Perimeter(0, 0, 1, 0),
+        },
+        'icon-info': {
+            'background': Color('888'),
+        },
+        'icon-active': {
+            'background': Color('080'),
+        },
+        'icon-inactive': {
+            'background': Color('555'),
+        },
+    },
+})
+
+
+def setupBar(bar):
+    bar.addLeft(
+        chunks.Text('xcffibär', styles='title')
+    )
+
+    #bar.addChunkCenter(chunks.Text('xcffibär', styles='title'))
+
+    clock = chunks.Text(time.strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
+
+    def updateClock():
+        #print('\x1b[1;35mupdateClock()\x1b[m')
+        clock.text = time.strftime('%Y-%m-%d %H:%M:%S')
+        bar.paint()
+
+    addInterval(1, updateClock)
+
+    bar.addRight(
+        clock,
+        #chunks.Image('/usr/share/icons/Moka/16x16/apps/clock.png', styles='icon'),
+        chunks.Image(styles='icon-clock icon'),
+
+        #chunks.Separator(width=8, height=18),
+
+        chunks.Text('192.168.128.98', styles='net-address'),
+        chunks.Image(styles='icon-net-wired icon-active icon'),
+
+        #chunks.Separator(width=8, height=18),
+
+        chunks.Text(''),
+        chunks.Image(styles='icon-net-wireless icon-inactive icon'),
+    )
 
 
 def run():
@@ -38,82 +131,26 @@ def run():
         if v.visual_id == rootVisual
     ][0]
 
-    windows = {}
+    print(Perimeter(0, 5))
 
-    theme = Theme({
-        'foreground': Color('8f8'),
-        'background': Color('030'),
-        'defaultChunkStyle': {
-            'foreground': Color('fff'),
-            'background': Color('000'),
-            #'fontFamily': 'monospace',
-            'fontFamily': 'Input Mono',
-        },
-        'chunkStyles': {
-            'title': {
-                'foreground': Color('555'),
-                'fontSize': '10px',
-                'padding': Perimeter(3),
-            },
-            'Text': {
-                'fontSize': '15px',
-                'padding': Perimeter(0),
-            },
-            'clock': {
-                'foreground': Color('999'),
-                'fontSize': '14px',
-                'padding': Perimeter(1),
-            },
-            'icon': {
-                'padding': Perimeter(1),
-            },
-            'icon-info': {
-                'background': Color('888'),
-                'padding': Perimeter(1),
-            },
-            'icon-active': {
-                'background': Color('080'),
-                'padding': Perimeter(1),
-            },
-            'icon-inactive': {
-                'background': Color('555'),
-                'padding': Perimeter(1),
-            },
-        },
-    })
+    dummy = Window(conn, screens[screenIndex], visualType.visual_id)
 
-    bar = Bar(conn, screens[screenIndex], visualType, theme)
-    windows[bar.id] = bar
+    randr = conn(xcffib.randr.key)
 
-    bar.addChunkLeft(chunks.Text('xcffibär', class_='title'))
+    print('GetScreenResources:')
+    screenResources = randr.GetScreenResources(dummy.id).reply()
+    inspect(screenResources)
 
-    #bar.addChunkCenter(chunks.Text('xcffibär', class_='title'))
+    crtcInfoCookies = [(crtc, randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
+    for crtc, crtcInfoCookie in crtcInfoCookies:
+        crtcInfo = crtcInfoCookie.reply()
+        if crtcInfo.num_outputs:
+            print(f'Creating bar for crtc {crtc}.')
+            setupBar(Bar(conn, screens[screenIndex], visualType, theme, height=17, screenExtents=crtcInfo))
+        else:
+            print(f'(crtc {crtc} disabled)')
 
-    clock = chunks.Text(time.strftime('%Y-%m-%d %H:%M:%S'), class_='clock')
-
-    def updateClock():
-        print('\x1b[1;35mupdateClock()\x1b[m')
-        clock.text = time.strftime('%Y-%m-%d %H:%M:%S')
-        bar.paint()
-
-    addInterval(1, updateClock)
-
-    bar.addChunkRight(clock)
-    #bar.addChunkRight(chunks.Image('/usr/share/icons/Moka/16x16/apps/clock.png', class_='icon'))
-    bar.addChunkRight(chunks.Image('/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
-                                   class_='icon-info'))
-
-    bar.addChunkRight(chunks.Separator(width=8, height=18))
-
-    bar.addChunkRight(chunks.Text('192.168.128.98'))
-    bar.addChunkRight(chunks.Image('/usr/share/icons/Adwaita/16x16/devices/network-wired-symbolic.symbolic.png',
-                                   class_='icon-active'))
-
-    bar.addChunkRight(chunks.Separator(width=8, height=18))
-
-    bar.addChunkRight(chunks.Text(''))
-    bar.addChunkRight(chunks.Image('/usr/share/icons/Adwaita/16x16/devices/network-wireless-symbolic.symbolic.png',
-                                   class_='icon-inactive'))
+    dummy.close()
 
     while True:
         try:
@@ -136,7 +173,7 @@ def run():
 
             windowID = event.window if hasattr(event, 'window') else event.event
             try:
-                windows[windowID].handleEvent(event)
+                Window.windowsByID[windowID].handleEvent(event)
             except QuitApplication:
                 break
 
@@ -149,8 +186,9 @@ def run():
 
         triggerElapsedTimers()
 
-    for window in windows.values():
-        window.cleanUp()
+    for window in Window.windowsByID.values():
+        if hasattr(window, 'cleanUp') and callable(window.cleanUp):
+            window.cleanUp()
 
     conn.disconnect()
 

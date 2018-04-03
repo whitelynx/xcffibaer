@@ -2,9 +2,10 @@ from collections import namedtuple
 
 import cairocffi
 from cairocffi.xcb import XCBSurface
-from xcffib.xproto import PropMode, ExposeEvent, EnterNotifyEvent, \
+from xcffib.xproto import CW, PropMode, ExposeEvent, EnterNotifyEvent, \
      LeaveNotifyEvent, ButtonPressEvent, ConfigureNotifyEvent, \
      PropertyNotifyEvent
+import xpybutil.ewmh as ewmh
 
 from .Window import Window
 from .atoms import atoms
@@ -20,11 +21,36 @@ paintFinishMethod = None
 
 
 class Bar(Window):
-    def __init__(self, connection, screen, visualType, theme, height=16):
+    def __init__(self, connection, screen, visualType, theme, height=16, bottom=False, screenExtents=None):
         black = screen.black_pixel
-        width = screen.width_in_pixels
 
-        super().__init__(connection, screen, visualType.visual_id, width=width, height=height, background=black)
+        width = screen.width_in_pixels if screenExtents is None else screenExtents.width
+
+        if bottom:
+            outputHeight = screen.height_in_pixels if screenExtents is None else screenExtents.height
+            x, y = 0 if screenExtents is None else screenExtents.x, outputHeight - height
+        else:
+            if screenExtents is not None:
+                x, y = screenExtents.x, screenExtents.y
+            else:
+                x, y = 0, 0
+
+        attributes = {
+            CW.BackPixel: black,
+            CW.BorderPixel: black,
+            CW.OverrideRedirect: 1,
+        }
+
+        super().__init__(connection, screen, visualType.visual_id, x, y, width, height, attributes=attributes)
+
+        setWMStrutPartialCookie = ewmh.set_wm_strut_partial_checked(
+            self.id,
+            0, 0, 0, height,  # left, right, top, bottom,
+            0, 0,             # left_start_y, left_end_y
+            0, 0,             # right_start_y, right_end_y,
+            0, 0,             # top_start_x, top_end_x,
+            0, width          # bottom_start_x, bottom_end_x
+        )
 
         self.chunks = Chunks([], [])
 
@@ -33,8 +59,6 @@ class Bar(Window):
         self.lastWidth = width
         self.lastHeight = height
 
-        print('\x1b[93matoms:\x1b[m')
-        inspect(atoms)
         connection.core.ChangeProperty(
             PropMode.Replace, self.id,
             atoms['_NET_WM_NAME'], atoms['UTF8_STRING'], 8,
@@ -42,17 +66,11 @@ class Bar(Window):
         )
         connection.core.MapWindow(self.id)
 
-        connection.flush()
-
-        #  :param conn: The :class:`xcffib.Connection` for an open XCB connection
-        #  :param drawable:
-        #      An XID corresponding to an XCB drawable (a pixmap or a window)
-        #  :param visual: An :class:`xcffib.xproto.VISUALTYPE` object.
-        #  :param width: integer
-        #  :param height: integer
         self.surface = XCBSurface(connection, self.id, visualType, width, height)
 
         connection.flush()
+
+        setWMStrutPartialCookie.check()
 
     def addChunkLeft(self, chunk):
         chunk.setTheme(self.theme)
@@ -61,6 +79,14 @@ class Bar(Window):
     def addChunkRight(self, chunk):
         chunk.setTheme(self.theme)
         self.chunks.right.append(chunk)
+
+    def addLeft(self, *chunks):
+        for chunk in chunks:
+            self.addChunkLeft(chunk)
+
+    def addRight(self, *chunks):
+        for chunk in chunks:
+            self.addChunkRight(chunk)
 
     def paint(self):
         print('\x1b[92mPaint...\x1b[m')
@@ -131,6 +157,9 @@ class Bar(Window):
         elif isinstance(event, ButtonPressEvent):
             print('Button %d down' % event.detail)
             raise QuitApplication()
+
+        else:
+            super().handleEvent(event)
 
     def cleanUp(self):
         #self.connection.core.FreeGC(self.gc)

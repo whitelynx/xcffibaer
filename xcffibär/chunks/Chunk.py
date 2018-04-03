@@ -2,8 +2,10 @@ from ..utils import Perimeter
 
 
 class Chunk(object):
-    def __init__(self, theme=None, class_=None, width=None, height=None):
-        self.class_ = class_
+    def __init__(self, theme=None, styles=[], width=None, height=None):
+        if isinstance(styles, str):
+            styles = styles.split()
+        self.styles = styles
 
         self._intrinsicInnerWidth = 0
         self._intrinsicInnerHeight = 0
@@ -14,10 +16,10 @@ class Chunk(object):
             self.setTheme(theme)
 
     def setTheme(self, theme):
-        self.applyStyle(theme.chunkStyle(self.getClass()))
+        self.applyStyle(theme.getChunkStyle(*self.getStyleNames()))
 
-    def getClass(self):
-        return self.class_ or self.__class__.__name__
+    def getStyleNames(self):
+        return self.styles + [self.__class__.__name__]
 
     def applyStyle(self, chunkStyle):
         self.chunkStyle = chunkStyle
@@ -75,7 +77,7 @@ class Chunk(object):
     def innerHeight(self):
         if self._overrideHeight is not None:
             padding = self.padding
-            return self._overrideHeight - padding[3] - padding[1]
+            return self._overrideHeight - padding[0] - padding[2]
         else:
             return self._intrinsicInnerHeight
 
@@ -91,7 +93,7 @@ class Chunk(object):
     @property
     def outerHeight(self):
         padding = self.padding
-        return padding[3] + self.innerHeight + padding[1]
+        return padding[0] + self.innerHeight + padding[2]
 
     @property
     def outerWidth(self):

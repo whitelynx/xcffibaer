@@ -6,3 +6,4 @@ ENV_DIR="$PROJECT_DIR/env"
 [ -d "$ENV_DIR" ] || virtualenv "$ENV_DIR"
 
 "$ENV_DIR/bin/pip" install -r "$PROJECT_DIR/requirements.txt"
+"$ENV_DIR/bin/pip" install cairocffi[xcb] -U --force-reinstall --no-binary cairocffi

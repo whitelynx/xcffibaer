@@ -44,14 +44,15 @@ class Image(Chunk):
     OPERATOR_HSL_COLOR = OPERATOR_HSL_COLOR
     OPERATOR_HSL_LUMINOSITY = OPERATOR_HSL_LUMINOSITY
 
-    def __init__(self, image, **kwargs):
+    def __init__(self, image=None, **kwargs):
         super().__init__(**kwargs)
 
+        self._styleImage = None
         self.image = image
 
     @property
     def image(self):
-        '''The displayed image.
+        '''The displayed image as explicitly defined in the constructor.
 
         This can either be a filename (string), or a binary mode file-like object with a `read()` method.
 
@@ -61,7 +62,33 @@ class Image(Chunk):
     @image.setter
     def image(self, value):
         self._image = value
-        self.imageSurface = ImageSurface.create_from_png(value)
+        self._makeImageSurface()
+
+    @property
+    def styleImage(self):
+        '''The displayed image as defined by the style.
+
+        This can either be a filename (string), or a binary mode file-like object with a `read()` method.
+
+        '''
+        return self._styleImage
+
+    @styleImage.setter
+    def styleImage(self, value):
+        self._styleImage = value
+        self._makeImageSurface()
+
+    def _makeImageSurface(self):
+        image = self._image if self._image is not None else self._styleImage
+        if image is not None:
+            self.imageSurface = ImageSurface.create_from_png(image)
+        else:
+            self.imageSurface = None
+
+    def applyStyle(self, chunkStyle):
+        super().applyStyle(chunkStyle)
+
+        self.styleImage = chunkStyle.image
 
     def updateIntrinsicSize(self):
         #TODO: Scaling?
@@ -70,7 +97,6 @@ class Image(Chunk):
 
     def paint(self):
         if self.chunkStyle.background:
-            print('\x1b[91mPainting background: %s\x1b[m' % (self.chunkStyle.background, ))
             self.chunkStyle.background(self.context)
             self.context.paint()
 

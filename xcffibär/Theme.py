@@ -1,28 +1,25 @@
+from collections import ChainMap, defaultdict
+
+
 class ChunkStyle(object):
-    def __init__(self, config, parentStyle=None):
+    def __init__(self, config):
         self.config = config
-        self.parentStyle = parentStyle
 
     def __getattr__(self, name):
-        if self.parentStyle:
-            return self.config.get(name, getattr(self.parentStyle, name))
-        else:
-            return self.config.get(name, None)
+        return self.config[name]
 
 
 class Theme(object):
     def __init__(self, config):
         self.config = config
 
-        self.defaultChunkStyle = ChunkStyle(config.get('defaultChunkStyle', {}))
+        self.defaultChunkStyle = defaultdict(lambda: None, config.get('defaultChunkStyle', {}))
 
-        self.chunkStyles = dict(
-            (chunkClass, ChunkStyle(chunkConfig, self.defaultChunkStyle))
-            for chunkClass, chunkConfig in config.get('chunkStyles', {}).items()
-        )
+        self.chunkStyles = defaultdict(lambda: {}, config.get('chunkStyles', {}))
 
     def __getattr__(self, name):
         return self.config.get(name, None)
 
-    def chunkStyle(self, chunkClass):
-        return self.chunkStyles.get(chunkClass, self.defaultChunkStyle)
+    def getChunkStyle(self, *chunkStyleNames):
+        maps = [self.chunkStyles[styleName] for styleName in chunkStyleNames] + [self.defaultChunkStyle]
+        return ChunkStyle(ChainMap(*maps))

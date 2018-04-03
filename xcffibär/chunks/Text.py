@@ -1,5 +1,4 @@
 from ..utils import Perimeter
-#from ..pangocairo import layoutText, getTextLayoutSize, showTextLayout, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT
 from ..pangocffi import CairoContext, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT
 
 from .Chunk import Chunk
@@ -130,10 +129,9 @@ class Text(Chunk):
             context = CairoContext(context)
 
         if usePangoCairo:
-            #self.layout = layoutText(context, self.textFormat % (self.text, ))
             self.layout = context.create_layout()
             self.layout.set_markup(self.textFormat % (self.text, ))
-            print('printing text: \x1b[32m%r\x1b[m' % (self.textFormat % (self.text, ), ))
+            #print('printing text: \x1b[32m%r\x1b[m' % (self.textFormat % (self.text, ), ))
 
         else:
             if self.chunkStyle.fontFamily:
@@ -145,7 +143,6 @@ class Text(Chunk):
 
     def updateIntrinsicSize(self):
         if usePangoCairo:
-            #width, height = getTextLayoutSize(self.context, self.layout)
             width, height = self.layout.get_pixel_size()
         else:
             x_bearing, y_bearing, width, height, x_advance, y_advance = self.context.text_extents(self.text)
@@ -162,7 +159,6 @@ class Text(Chunk):
         self.chunkStyle.foreground(self.context)
         if usePangoCairo:
             self.context.move_to(padding[3], padding[0])
-            #showTextLayout(self.context, self.layout)
             self.context.show_layout(self.layout)
         else:
             self.context.move_to(padding[3], self.height - padding[2])

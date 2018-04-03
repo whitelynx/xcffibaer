@@ -7,7 +7,6 @@ class Graph(Chunk):
 
     def paint(self):
         if self.chunkStyle.background:
-            print('\x1b[91mPainting background: %s\x1b[m' % (self.chunkStyle.background, ))
             self.chunkStyle.background(self.context)
             self.context.paint()
 
