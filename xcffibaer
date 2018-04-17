@@ -2,6 +2,7 @@
 
 import os
 import time
+from datetime import datetime
 
 import xcffib
 import xcffib.render
@@ -70,6 +71,14 @@ theme = Theme({
         'icon-inactive': {
             'background': Color('555'),
         },
+
+        # Graph styles
+        'Graph': {
+            'padding': Perimeter(3),
+            'background': Color('555'),
+            'trough': Color('111'),
+            'foreground': Color('0f0'),
+        },
     },
 })
 
@@ -81,14 +90,13 @@ def setupBar(bar):
 
     #bar.addChunkCenter(chunks.Text('xcffibär', styles='title'))
 
-    clock = chunks.Text(time.strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
+    clock = chunks.Text(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
 
     def updateClock():
-        #print('\x1b[1;35mupdateClock()\x1b[m')
-        clock.text = time.strftime('%Y-%m-%d %H:%M:%S')
+        clock.text = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         bar.paint()
 
-    addInterval(1, updateClock)
+    addInterval(0.01, updateClock)
 
     bar.addRight(
         clock,
@@ -104,6 +112,10 @@ def setupBar(bar):
 
         chunks.Text(''),
         chunks.Image(styles='icon-net-wireless icon-inactive icon'),
+
+        #chunks.Separator(width=8, height=18),
+
+        chunks.Graph(value=3, maxValue=10, width=50, height=18),
     )
 
 
@@ -130,8 +142,6 @@ def run():
         for v in depthInfo.visuals.list
         if v.visual_id == rootVisual
     ][0]
-
-    print(Perimeter(0, 5))
 
     dummy = Window(conn, screens[screenIndex], visualType.visual_id)
 
@@ -182,7 +192,7 @@ def run():
             break
 
         else:
-            time.sleep(0.05)
+            time.sleep(0.005)
 
         triggerElapsedTimers()
 

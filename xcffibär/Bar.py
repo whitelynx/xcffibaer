@@ -89,8 +89,6 @@ class Bar(Window):
             self.addChunkRight(chunk)
 
     def paint(self):
-        print('\x1b[92mPaint...\x1b[m')
-
         context = cairocffi.Context(self.surface)
         with context:
             self.theme.background(context)
