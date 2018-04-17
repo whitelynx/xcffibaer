@@ -3,10 +3,13 @@
 import os
 import time
 from datetime import datetime
+from pprint import pprint
 
 import xcffib
 import xcffib.render
 import xcffib.randr
+
+import statgrab
 
 from xcffibär.sourcePatterns import Color
 from xcffibär.Theme import Theme
@@ -52,7 +55,7 @@ theme = Theme({
         'icon-clock': {
             'image': '/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
             'padding': Perimeter(1, 0, 0, 1),
-            'background': Color('448'),
+            'foreground': Color('448'),
         },
         'icon-net-wired': {
             'image': '/usr/share/icons/Adwaita/16x16/devices/network-wired-symbolic.symbolic.png',
@@ -63,40 +66,60 @@ theme = Theme({
             'padding': Perimeter(0, 0, 1, 0),
         },
         'icon-info': {
-            'background': Color('888'),
+            'foreground': Color('888'),
         },
         'icon-active': {
-            'background': Color('080'),
+            'foreground': Color('080'),
         },
         'icon-inactive': {
-            'background': Color('555'),
+            'foreground': Color('555'),
         },
 
         # Graph styles
         'Graph': {
             'padding': Perimeter(3),
-            'background': Color('555'),
-            'trough': Color('111'),
-            'foreground': Color('0f0'),
+            'trough': Color('222'),
+            'foregrounds': [
+                Color('0f0'),  # user
+                Color('f00'),  # kernel
+                Color('00f'),  # nice
+                Color('f0f'),  # swap
+                Color('555'),  # iowait
+            ]
         },
     },
 })
 
 
 def setupBar(bar):
-    bar.addLeft(
-        chunks.Text('xcffibär', styles='title')
-    )
-
     #bar.addChunkCenter(chunks.Text('xcffibär', styles='title'))
 
     clock = chunks.Text(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
-
     def updateClock():
         clock.text = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         bar.paint()
-
     addInterval(0.01, updateClock)
+
+    cpuGraph = chunks.Graph(maxValue=100, width=100, height=17)
+    cpuGraph2 = chunks.Graph(maxValue=100, width=100, height=17, align='left')
+    def updateCPUGraph():
+        cpuPercents = statgrab.sg_get_cpu_percents()
+        values = [
+            cpuPercents['user'],
+            cpuPercents['kernel'],
+            cpuPercents['nice'],
+            cpuPercents['swap'],
+            cpuPercents['iowait'],
+        ]
+        cpuGraph.values = values
+        cpuGraph2.values = values
+        bar.paint()
+    addInterval(0.5, updateCPUGraph)
+
+    bar.addLeft(
+        chunks.Text('xcffibär', styles='title'),
+        cpuGraph,
+    )
 
     bar.addRight(
         clock,
@@ -115,7 +138,7 @@ def setupBar(bar):
 
         #chunks.Separator(width=8, height=18),
 
-        chunks.Graph(value=3, maxValue=10, width=50, height=18),
+        cpuGraph2,
     )
 
 
@@ -150,6 +173,8 @@ def run():
     print('GetScreenResources:')
     screenResources = randr.GetScreenResources(dummy.id).reply()
     inspect(screenResources)
+
+    statgrab.sg_init()
 
     crtcInfoCookies = [(crtc, randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
     for crtc, crtcInfoCookie in crtcInfoCookies:

@@ -3,9 +3,11 @@ cairocffi==0.8.0
 cffi==1.10.0
 click==6.7
 collist==0.5
+cython==0.28.2
 packaging==16.8
 pycparser==2.17
 pyparsing==2.2.0
+git+https://github.com/whitelynx/pystatgrab.git
 six==1.10.0
 uncrumpled_xpybutil==0.0.1
 xcffib==0.5.1

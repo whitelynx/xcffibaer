@@ -28,7 +28,7 @@ class Chunk(object):
         self.context = context
         self.updateIntrinsicSize()
 
-    def paint(self, context):
+    def paint(self):
         pass
 
     @property
