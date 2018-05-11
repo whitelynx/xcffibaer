@@ -156,19 +156,15 @@ class Text(Chunk):
         self.intrinsicInnerWidth, self.intrinsicInnerHeight = width, height
 
     def paint(self):
-        if self.chunkStyle.background:
-            self.chunkStyle.background(self.context)
-            self.context.paint()
+        ctx = self.beginPaint()
 
-        padding = self.padding
-
-        self.chunkStyle.foreground(self.context)
+        self.chunkStyle.foreground(ctx)
         if usePangoCairo:
-            self.context.move_to(padding[3], padding[0])
-            self.context.show_layout(self.layout)
+            ctx.move_to(0, 0)
+            ctx.show_layout(self.layout)
         else:
-            self.context.move_to(padding[3], self.outerHeight - padding[2])
-            self.context.show_text(self.text)
+            ctx.move_to(0, self.innerHeight)
+            ctx.show_text(self.text)
 
 
 __all__ = ['Text', 'ALIGN_LEFT', 'ALIGN_CENTER', 'ALIGN_RIGHT']
