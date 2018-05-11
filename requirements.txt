@@ -11,3 +11,4 @@ git+https://github.com/whitelynx/pystatgrab.git
 six==1.10.0
 uncrumpled_xpybutil==0.0.1
 xcffib==0.5.1
+xpybutil==0.0.5

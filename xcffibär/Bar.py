@@ -1,3 +1,6 @@
+'''Bar class
+
+'''
 from collections import namedtuple
 
 import cairocffi
@@ -9,7 +12,7 @@ import xpybutil.ewmh as ewmh
 
 from .Window import Window
 from .atoms import atoms
-from .utils import xStr, QuitApplication, inspect
+from .utils import xStr, QuitApplication, topStrut, bottomStrut
 
 
 Chunks = namedtuple('Chunks', 'left right')
@@ -28,12 +31,12 @@ class Bar(Window):
 
         if bottom:
             outputHeight = screen.height_in_pixels if screenExtents is None else screenExtents.height
-            x, y = 0 if screenExtents is None else screenExtents.x, outputHeight - height
+            pos = 0 if screenExtents is None else screenExtents.x, outputHeight - height
         else:
             if screenExtents is not None:
-                x, y = screenExtents.x, screenExtents.y
+                pos = screenExtents.x, screenExtents.y
             else:
-                x, y = 0, 0
+                pos = 0, 0
 
         attributes = {
             CW.BackPixel: black,
@@ -41,15 +44,11 @@ class Bar(Window):
             CW.OverrideRedirect: 1,
         }
 
-        super().__init__(connection, screen, visualType.visual_id, x, y, width, height, attributes=attributes)
+        super().__init__(connection, screen, visualType.visual_id, *pos, width, height, attributes=attributes)
 
         setWMStrutPartialCookie = ewmh.set_wm_strut_partial_checked(
             self.id,
-            0, 0, 0, height,  # left, right, top, bottom,
-            0, 0,             # left_start_y, left_end_y
-            0, 0,             # right_start_y, right_end_y,
-            0, 0,             # top_start_x, top_end_x,
-            0, width          # bottom_start_x, bottom_end_x
+            *bottomStrut(width, height) if bottom else topStrut(width, height)
         )
 
         self.chunks = Chunks([], [])

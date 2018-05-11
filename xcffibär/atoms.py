@@ -1,3 +1,6 @@
+'''X11 atom cache
+
+'''
 from .utils import xStr
 
 

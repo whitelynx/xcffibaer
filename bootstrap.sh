@@ -1,7 +1,7 @@
 #!/bin/sh
 
-PROJECT_DIR="$(cd "$(dirname $0)"; pwd)"
-ENV_DIR="$PROJECT_DIR/env"
+PROJECT_DIR="$(cd "$(dirname "$0")"; pwd)"
+ENV_DIR="$PROJECT_DIR/venv"
 
 [ -d "$ENV_DIR" ] || virtualenv "$ENV_DIR"
 

@@ -1,3 +1,6 @@
+'''Timer functions
+
+'''
 import time
 
 
@@ -18,7 +21,7 @@ def addInterval(delay, callback):
 
 
 def addDeadline(targetTime, callback):
-    for i, (currTargetTime, currCallback) in enumerate(sortedTimers):
+    for i, (currTargetTime, _currCallback) in enumerate(sortedTimers):
         if currTargetTime < targetTime:
             sortedTimers.insert(i, (targetTime, callback))
             return
@@ -35,5 +38,5 @@ def triggerElapsedTimers():
     currentTime = time.monotonic()
 
     while sortedTimers and sortedTimers[-1][0] < currentTime:
-        targetTime, callback = sortedTimers.pop()
+        _targetTime, callback = sortedTimers.pop()
         callback()

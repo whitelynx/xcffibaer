@@ -1,9 +1,17 @@
+'''Base Chunk class
+
+'''
 from ..utils import Perimeter
 
 
 class Chunk(object):
-    def __init__(self, theme=None, styles=[], width=None, height=None):
-        if isinstance(styles, str):
+    def __init__(self, theme=None, styles=None, width=None, height=None):
+        self.context = None
+        self.chunkStyle = None
+
+        if styles is None:
+            styles = []
+        elif isinstance(styles, str):
             styles = styles.split()
         self.styles = styles
 
@@ -78,16 +86,14 @@ class Chunk(object):
         if self._overrideHeight is not None:
             padding = self.padding
             return self._overrideHeight - padding[0] - padding[2]
-        else:
-            return self._intrinsicInnerHeight
+        return self._intrinsicInnerHeight
 
     @property
     def innerWidth(self):
         if self._overrideWidth is not None:
             padding = self.padding
             return self._overrideWidth - padding[3] - padding[1]
-        else:
-            return self._intrinsicInnerWidth
+        return self._intrinsicInnerWidth
 
     # Calculated outer dimensions
     @property

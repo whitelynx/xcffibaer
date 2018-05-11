@@ -1,3 +1,6 @@
+'''Cairo source pattern definitions
+
+'''
 import re
 
 longHexColorRE = re.compile(r'^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})?$')
@@ -55,7 +58,7 @@ class Color(object):
 
 if __name__ == '__main__':
     def test(expr):
-        print('{}: {}'.format(expr, eval(expr)))
+        print('{}: {}'.format(expr, eval(expr)))  # pylint: disable=eval-used
 
     test('Color("abc")')
     test('Color("abcd")')

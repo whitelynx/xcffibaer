@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+'''A themeable status bar written in Python, using xcffib.
 
+'''
 import os
 import time
 from datetime import datetime
-from pprint import pprint
 
 import xcffib
 import xcffib.render
@@ -17,6 +18,10 @@ from xcffibär.atoms import initAtoms
 from xcffibär.utils import Perimeter, QuitApplication, inspect
 from xcffibär.timers import addInterval, triggerElapsedTimers
 from xcffibär import Bar, chunks, Window
+
+
+TICK_LENGTH = 0.005
+SCREEN_INDEX = 0
 
 
 theme = Theme({
@@ -95,6 +100,7 @@ def setupBar(bar):
     #bar.addChunkCenter(chunks.Text('xcffibär', styles='title'))
 
     clock = chunks.Text(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
+
     def updateClock():
         clock.text = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         bar.paint()
@@ -102,6 +108,7 @@ def setupBar(bar):
 
     cpuGraph = chunks.Graph(maxValue=100, width=100, height=17)
     cpuGraph2 = chunks.Graph(maxValue=100, width=100, height=17, align='left')
+
     def updateCPUGraph():
         cpuPercents = statgrab.sg_get_cpu_percents()
         values = [
@@ -142,21 +149,29 @@ def setupBar(bar):
     )
 
 
+def handleWindowEvent(event):
+    print('\x1b[93mIncoming %s:\x1b[m' % (event.__class__.__name__, ))
+    inspect(event)
+
+    windowID = event.window if hasattr(event, 'window') else event.event
+    Window.windowsByID[windowID].handleEvent(event)
+
+
 def run():
     conn = xcffib.connect(display=os.getenv('DISPLAY'))
+    conn.randr = conn(xcffib.randr.key)
     conn.render = conn(xcffib.render.key)
 
     screens = conn.get_screen_pointers()
 
     initAtoms(conn)
 
-    screenIndex = 0
-    rootDepth = screens[screenIndex].root_depth
-    rootVisual = screens[screenIndex].root_visual
+    rootDepth = screens[SCREEN_INDEX].root_depth
+    rootVisual = screens[SCREEN_INDEX].root_visual
 
     depthInfo = [
         d
-        for d in conn.get_setup().roots.list[screenIndex].allowed_depths.list
+        for d in conn.get_setup().roots.list[SCREEN_INDEX].allowed_depths.list
         if d.depth == rootDepth
     ][0]
 
@@ -166,22 +181,20 @@ def run():
         if v.visual_id == rootVisual
     ][0]
 
-    dummy = Window(conn, screens[screenIndex], visualType.visual_id)
-
-    randr = conn(xcffib.randr.key)
+    dummy = Window(conn, screens[SCREEN_INDEX], visualType.visual_id)
 
     print('GetScreenResources:')
-    screenResources = randr.GetScreenResources(dummy.id).reply()
+    screenResources = conn.randr.GetScreenResources(dummy.id).reply()
     inspect(screenResources)
 
     statgrab.sg_init()
 
-    crtcInfoCookies = [(crtc, randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
+    crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
     for crtc, crtcInfoCookie in crtcInfoCookies:
         crtcInfo = crtcInfoCookie.reply()
         if crtcInfo.num_outputs:
             print(f'Creating bar for crtc {crtc}.')
-            setupBar(Bar(conn, screens[screenIndex], visualType, theme, height=17, screenExtents=crtcInfo))
+            setupBar(Bar(conn, screens[SCREEN_INDEX], visualType, theme, height=17, screenExtents=crtcInfo))
         else:
             print(f'(crtc {crtc} disabled)')
 
@@ -194,21 +207,14 @@ def run():
         except xcffib.ProtocolException as error:
             print("\x1b[91mProtocol error %s received!\x1b[m" % (error.__class__.__name__, ))
             break
-        except Exception as error:
+        except Exception as error:  # pylint: disable=broad-except
             print("\x1b[91mUnexpected %s received:\x1b[m %s" % (error.__class__.__name__, error))
-            for key in dir(error):
-                val = getattr(error, key)
-                if not callable(val):
-                    print('  %s: %r' % (key, val))
+            inspect(error)
             break
 
         if event:
-            print('\x1b[93mIncoming %s:\x1b[m' % (event.__class__.__name__, ))
-            inspect(event)
-
-            windowID = event.window if hasattr(event, 'window') else event.event
             try:
-                Window.windowsByID[windowID].handleEvent(event)
+                handleWindowEvent(event)
             except QuitApplication:
                 break
 
@@ -217,7 +223,7 @@ def run():
             break
 
         else:
-            time.sleep(0.005)
+            time.sleep(TICK_LENGTH)
 
         triggerElapsedTimers()
 

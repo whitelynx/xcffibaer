@@ -1,3 +1,6 @@
+'''Separator chunk
+
+'''
 from .Chunk import Chunk
 
 

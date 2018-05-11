@@ -1,3 +1,6 @@
+'''Image chunk
+
+'''
 from cairocffi import (
     ImageSurface,
     OPERATOR_CLEAR,
@@ -47,7 +50,10 @@ class Image(Chunk):
     def __init__(self, image=None, **kwargs):
         super().__init__(**kwargs)
 
+        self._image = None
         self._styleImage = None
+        self.imageSurface = None
+
         self.image = image
 
     @property

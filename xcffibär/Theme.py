@@ -1,3 +1,6 @@
+'''Theme class
+
+'''
 from collections import ChainMap, defaultdict
 
 

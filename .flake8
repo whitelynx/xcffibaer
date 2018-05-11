@@ -1,5 +1,16 @@
 [flake8]
-ignore = E265,E126
+
 max-line-length = 120
 
-# vim: ft=dosini
+doctests = True
+
+ignore =
+	E126, # continuation line over-indented for hanging indent
+	E265  # block comment should start with '# '
+
+exclude =
+	.git,
+	_ffi_pango.py,
+	_ffi_xcursors.py
+
+# vim: ft=cfg

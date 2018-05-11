@@ -1,10 +1,13 @@
+'''Graph chunk
+
+'''
 from .Chunk import Chunk
 
 
 class Graph(Chunk):
-    def __init__(self, maxValue, value=None, values=[], align='right', **kwargs):
+    def __init__(self, maxValue, value=None, values=None, align='right', **kwargs):
         super().__init__(**kwargs)
-        self.values = [value] if value is not None else values
+        self.values = [value] if value is not None else values if values is not None else []
         self.maxValue = maxValue
         self.align = align
 

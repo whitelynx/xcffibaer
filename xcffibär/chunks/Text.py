@@ -1,4 +1,6 @@
-from ..utils import Perimeter
+'''Text chunk
+
+'''
 from ..pangocffi import CairoContext, ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT
 
 from .Chunk import Chunk
@@ -37,6 +39,10 @@ stylePropMapping = {
 class Text(Chunk):
     def __init__(self, text, **kwargs):
         super().__init__(**kwargs)
+
+        self._text = None
+        self._formattedText = None
+        self.layout = None
 
         self.textFormat = '%s'
         self.text = text
@@ -117,7 +123,7 @@ class Text(Chunk):
             except AttributeError:
                 pass
 
-        if len(props) > 0:
+        if props:
             self.textFormat = '<span %s>%%s</span>' % (' '.join(props), )
         else:
             self.textFormat = '%s'
@@ -145,7 +151,7 @@ class Text(Chunk):
         if usePangoCairo:
             width, height = self.layout.get_pixel_size()
         else:
-            x_bearing, y_bearing, width, height, x_advance, y_advance = self.context.text_extents(self.text)
+            _xBearing, _yBearing, width, height, _xAdvance, _yAdvance = self.context.text_extents(self.text)
 
         self.intrinsicInnerWidth, self.intrinsicInnerHeight = width, height
 
@@ -161,7 +167,7 @@ class Text(Chunk):
             self.context.move_to(padding[3], padding[0])
             self.context.show_layout(self.layout)
         else:
-            self.context.move_to(padding[3], self.height - padding[2])
+            self.context.move_to(padding[3], self.outerHeight - padding[2])
             self.context.show_text(self.text)
 
 
