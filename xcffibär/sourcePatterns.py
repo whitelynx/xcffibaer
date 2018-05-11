@@ -7,10 +7,25 @@ longHexColorRE = re.compile(r'^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2}
 shortHexColorRE = re.compile(r'^#?([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])?$')
 
 
+def parseColorString(colorString):
+    match = longHexColorRE.match(colorString)
+    if match:
+        return tuple(int(c, 16) / 255.0 for c in match.groups() if c is not None)
+    else:
+        match = shortHexColorRE.match(colorString)
+        if match:
+            return tuple(int(c, 16) / 15.0 for c in match.groups() if c is not None)
+        else:
+            raise ValueError("Couldn't parse hex color string!")
+
+
 class Color(object):
     def __init__(self, *someColor):
         if len(someColor) == 1:
             someColor = someColor[0]
+
+        if isinstance(someColor, str):
+            someColor = parseColorString(someColor)
 
         if isinstance(someColor, tuple):
             if len(someColor) == 3:
@@ -26,19 +41,6 @@ class Color(object):
                 self.components = tuple(c / 255.0 for c in someColor)
             else:
                 raise ValueError('Tuple colors must be either all floats or all ints!')
-
-        elif isinstance(someColor, str):
-            match = longHexColorRE.match(someColor)
-            if match:
-                self.components = tuple(int(c, 16) / 255.0 for c in match.groups() if c is not None)
-            else:
-                match = shortHexColorRE.match(someColor)
-                if match:
-                    self.components = tuple(int(c, 16) / 15.0 for c in match.groups() if c is not None)
-                else:
-                    raise ValueError("Couldn't parse hex color string!")
-
-            self.hasAlpha = (len(self.components) == 4)
 
         else:
             raise ValueError('Unrecognized color input! Should be a tuple or a hex string.')
