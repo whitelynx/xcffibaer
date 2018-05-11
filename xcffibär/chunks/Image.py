@@ -102,16 +102,7 @@ class Image(Chunk):
         self.intrinsicInnerHeight = self.imageSurface.get_height()
 
     def paint(self):
-        ctx = self.context
-        padding = self.padding
-
-        if self.chunkStyle.background:
-            self.chunkStyle.background(ctx)
-            ctx.paint()
-
-        ctx.translate(padding[3], padding[0])
-        ctx.rectangle(0, 0, self.innerWidth, self.innerHeight)
-        ctx.clip()
+        ctx = self.beginPaint()
         #TODO: Scaling?
 
         if self.chunkStyle.operator:

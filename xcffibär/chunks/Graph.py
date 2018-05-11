@@ -20,16 +20,7 @@ class Graph(Chunk):
         self.values = [val]
 
     def paint(self):
-        ctx = self.context
-        padding = self.padding
-
-        if self.chunkStyle.background:
-            self.chunkStyle.background(ctx)
-            ctx.paint()
-
-        ctx.translate(padding[3], padding[0])
-        ctx.rectangle(0, 0, self.innerWidth, self.innerHeight)
-        ctx.clip()
+        ctx = self.beginPaint()
 
         if self.align == 'left':
             ctx.translate(self.innerWidth, 0)

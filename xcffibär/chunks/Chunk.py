@@ -36,6 +36,20 @@ class Chunk(object):
         self.context = context
         self.updateIntrinsicSize()
 
+    def beginPaint(self):
+        ctx = self.context
+        padding = self.padding
+
+        if self.chunkStyle.background:
+            self.chunkStyle.background(ctx)
+            ctx.paint()
+
+        ctx.translate(padding[3], padding[0])
+        ctx.rectangle(0, 0, self.innerWidth, self.innerHeight)
+        ctx.clip()
+
+        return ctx
+
     def paint(self):
         pass
 
