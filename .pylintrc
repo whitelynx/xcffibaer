@@ -1,0 +1,84 @@
+[MASTER]
+
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code
+#extension-pkg-whitelist=statgrab
+
+# Add files or directories to the blacklist. They should be base names, not
+# paths.
+ignore=.git,
+       ffi_build.py,
+       _ffi_pango.py,
+       _ffi_xcursors.py,
+       pangocffi.py
+
+[BASIC]
+
+# Naming style matching correct argument names
+argument-naming-style=camelCase
+
+# Naming style matching correct attribute names
+attr-naming-style=camelCase
+
+# Naming style matching correct class attribute names
+class-attribute-naming-style=any
+
+# Naming style matching correct class names
+class-naming-style=PascalCase
+
+# Naming style matching correct constant names
+const-naming-style=any
+
+# Naming style matching correct function names
+function-naming-style=camelCase
+
+# Naming style matching correct method names
+method-naming-style=camelCase
+
+# Naming style matching correct module names
+module-naming-style=any
+
+# Naming style matching correct variable names
+variable-naming-style=camelCase
+
+# Bad variable names which should always be refused, separated by a comma
+bad-names=foo,
+          baz,
+          fez,
+          toto,
+          tutu,
+          tata
+
+# Regular expression which should only match function or class names that do
+# not require a docstring.
+no-docstring-rgx=.
+
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=120
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+# List of optional constructs for which whitespace checking is disabled. `dict-
+# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
+# `trailing-comma` allows a space between comma and closing bracket: (a, ).
+# `empty-line` allows space-only lines.
+no-space-check=trailing-comma
+
+
+[DESIGN]
+
+# Maximum number of arguments for function / method
+max-args=8
+
+# Maximum number of attributes for a class (see R0902).
+max-attributes=12
+
+# Minimum number of public methods for a class (see R0903).
+min-public-methods=0
+
+# vim: ft=cfg
