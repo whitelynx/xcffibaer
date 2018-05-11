@@ -27,15 +27,19 @@ def dataAttrs(key, val):
     return key != '__dict__' and not callable(val)
 
 
+def publicDataAttrs(key, val):
+    return not key.startswith('__') and not key.endswith('__') and not callable(val)
+
+
 def methodAttrs(_key, val):
     return callable(val)
 
 
-def inspect(obj, filter=dataAttrs):  # pylint: disable=redefined-builtin
+def inspect(obj, attrFilter=publicDataAttrs):
     output = []
     for key in dir(obj):
         val = getattr(obj, key)
-        if filter(key, val):
+        if attrFilter(key, val):
             #print('  %s: %r' % (key, val))
             output.append('  \x1b[96m%s:\x1b[m %r' % (key, val))
     print(collist(output))
