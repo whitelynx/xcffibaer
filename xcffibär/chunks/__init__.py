@@ -1,10 +1,11 @@
 '''Bär chunks
 
 '''
+from .HistoryGraph import HistoryGraph
 from .Graph import Graph
 from .Image import Image
 from .Text import Text
 from .Separator import Separator
 
 
-__all__ = ['Graph', 'Image', 'Text', 'Separator']
+__all__ = ['HistoryGraph', 'Graph', 'Image', 'Text', 'Separator']

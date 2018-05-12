@@ -31,13 +31,13 @@ theme = Theme({
         'foreground': Color('fff'),
         'background': Color('000'),
         #'fontFamily': 'monospace',
-        'fontFamily': 'Input Mono',
+        'fontFamily': 'Input Mono Narrow',
     },
     'chunkStyles': {
         # Text styles
         'Text': {
             'fontSize': '11px',
-            'padding': Perimeter(0, 12, -1, 4),
+            'padding': Perimeter(1, 12, 2, 4),
         },
         'title': {
             'foreground': Color('555'),
@@ -50,7 +50,7 @@ theme = Theme({
         'clock': {
             'foreground': Color('999'),
             'fontSize': '10px',
-            'padding': Perimeter(0, 4),
+            'padding': Perimeter(2, 4),
         },
 
         # Image styles
@@ -107,7 +107,13 @@ def setupBar(bar):
     addInterval(0.01, updateClock)
 
     cpuGraph = chunks.Graph(maxValue=100, width=100, height=17)
-    cpuGraph2 = chunks.Graph(maxValue=100, width=100, height=17, align='left')
+    cpuGraph2 = chunks.Graph(maxValue=100, width=100, height=17, reverse=True)
+    cpuGraph3 = [
+        chunks.Graph(maxValue=100, width=10, height=17, vertical=True)
+        for idx in range(15)
+    ]
+    cpuGraph4 = chunks.Graph(maxValue=100, width=10, height=17, reverse=True, vertical=True)
+    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=50, height=17)
 
     def updateCPUGraph():
         cpuPercents = statgrab.sg_get_cpu_percents()
@@ -120,6 +126,10 @@ def setupBar(bar):
         ]
         cpuGraph.values = values
         cpuGraph2.values = values
+        for idx, graph in enumerate(cpuGraph3):
+            graph.values = cpuGraph3[idx + 1].values if idx + 1 < len(cpuGraph3) else values
+        cpuGraph4.values = values
+        cpuHistoryGraph.values = values
         bar.paint()
     addInterval(0.5, updateCPUGraph)
 
@@ -146,6 +156,9 @@ def setupBar(bar):
         #chunks.Separator(width=8, height=18),
 
         cpuGraph2,
+        *cpuGraph3,
+        cpuGraph4,
+        cpuHistoryGraph,
     )
 
 
