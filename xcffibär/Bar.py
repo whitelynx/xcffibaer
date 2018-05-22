@@ -2,6 +2,7 @@
 
 '''
 from collections import namedtuple
+import os
 
 import cairocffi
 from cairocffi.xcb import XCBSurface
@@ -9,6 +10,7 @@ from xcffib.xproto import CW, PropMode, ExposeEvent, EnterNotifyEvent, \
      LeaveNotifyEvent, ButtonPressEvent, ConfigureNotifyEvent, \
      PropertyNotifyEvent
 import xpybutil.ewmh as ewmh
+import xpybutil.icccm as icccm
 
 from .Window import Window
 from .atoms import atoms
@@ -24,13 +26,13 @@ paintFinishMethod = None
 
 
 class Bar(Window):
-    def __init__(self, connection, screen, visualType, theme, height=16, bottom=False, screenExtents=None):
-        black = screen.black_pixel
+    def __init__(self, xSetup, height=16, bottom=False, screenExtents=None, name=''):
+        black = xSetup.screen.black_pixel
 
-        width = screen.width_in_pixels if screenExtents is None else screenExtents.width
+        width = xSetup.screen.width_in_pixels if screenExtents is None else screenExtents.width
 
         if bottom:
-            outputHeight = screen.height_in_pixels if screenExtents is None else screenExtents.height
+            outputHeight = xSetup.screen.height_in_pixels if screenExtents is None else screenExtents.height
             pos = 0 if screenExtents is None else screenExtents.x, outputHeight - height
         else:
             if screenExtents is not None:
@@ -41,35 +43,45 @@ class Bar(Window):
         attributes = {
             CW.BackPixel: black,
             CW.BorderPixel: black,
-            CW.OverrideRedirect: 1,
         }
 
-        super().__init__(connection, screen, visualType.visual_id, *pos, width, height, attributes=attributes)
+        super().__init__(xSetup, *pos, width, height, attributes=attributes)
 
-        setWMStrutPartialCookie = ewmh.set_wm_strut_partial_checked(
-            self.id,
-            *bottomStrut(width, height) if bottom else topStrut(width, height)
-        )
+        strutPartial = bottomStrut(width, height, screenExtents.x) if bottom \
+            else topStrut(width, screenExtents.y + height, screenExtents.x)
+
+        cookies = [
+            icccm.set_wm_state_checked(self.id, icccm.State.Normal, 0),
+            icccm.set_wm_name_checked(self.id, f'xcffibaer_{name}'),
+            icccm.set_wm_class_checked(self.id, 'xcffibaer', 'xcffibär'),
+            ewmh.set_wm_pid_checked(self.id, os.getpid()),
+            ewmh.set_wm_strut_checked(self.id, *strutPartial[:4]),
+            ewmh.set_wm_strut_partial_checked(self.id, *strutPartial),
+            ewmh.set_wm_window_type_checked(self.id, [atoms['_NET_WM_WINDOW_TYPE_DOCK']]),
+            ewmh.set_wm_state_checked(self.id, [atoms['_NET_WM_STATE_STICKY'], atoms['_NET_WM_STATE_ABOVE']]),
+            #FIXME: This fails. Doing it manually below works.
+            #ewmh.set_wm_name_checked(self.id, 'xcffibär'),
+        ]
 
         self.chunks = Chunks([], [])
-
-        self.theme = theme
 
         self.lastWidth = width
         self.lastHeight = height
 
-        connection.core.ChangeProperty(
+        #TODO: Make this request checked.
+        self.connection.core.ChangeProperty(
             PropMode.Replace, self.id,
             atoms['_NET_WM_NAME'], atoms['UTF8_STRING'], 8,
             *xStr('xcffibär')
         )
-        connection.core.MapWindow(self.id)
+        self.connection.core.MapWindow(self.id)
 
-        self.surface = XCBSurface(connection, self.id, visualType, width, height)
+        self.surface = XCBSurface(self.connection, self.id, self.visual, width, height)
 
-        connection.flush()
+        self.connection.flush()
 
-        setWMStrutPartialCookie.check()
+        for cookie in cookies:
+            cookie.check()
 
     def addChunkLeft(self, chunk):
         chunk.setTheme(self.theme)
@@ -90,8 +102,11 @@ class Bar(Window):
     def paint(self):
         context = cairocffi.Context(self.surface)
         with context:
+            context.save()
             self.theme.background(context)
+            context.set_operator(cairocffi.OPERATOR_SOURCE)
             context.paint()
+            context.restore()
 
         lastX = 0
         for chunk in self.chunks.left:

@@ -2,22 +2,24 @@
 '''A themeable status bar written in Python, using xcffib.
 
 '''
+import asyncio
 import os
-import time
 from datetime import datetime
 
 import xcffib
 import xcffib.render
 import xcffib.randr
 
+import i3ipc
+
 import statgrab
 
 from xcffibär.sourcePatterns import Color
 from xcffibär.Theme import Theme
 from xcffibär.atoms import initAtoms
-from xcffibär.utils import Perimeter, QuitApplication, inspect
+from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo
 from xcffibär.timers import addInterval, triggerElapsedTimers
-from xcffibär import Bar, chunks, Window
+from xcffibär import Bar, chunks, Window, XSetup
 
 
 TICK_LENGTH = 0.005
@@ -26,23 +28,25 @@ SCREEN_INDEX = 0
 
 theme = Theme({
     'foreground': Color('8f8'),
-    'background': Color('222'),
+    #'background': Color('222'),
+    'background': Color('000a'),
     'defaultChunkStyle': {
         'foreground': Color('fff'),
-        'background': Color('000'),
+        'background': Color('0000'),
         #'fontFamily': 'monospace',
         'fontFamily': 'Input Mono Narrow',
+        'fontStretch': 'condensed',
     },
     'chunkStyles': {
         # Text styles
         'Text': {
             'fontSize': '11px',
-            'padding': Perimeter(1, 12, 2, 4),
+            'padding': Perimeter(3, 12, 4, 4),
         },
         'title': {
             'foreground': Color('555'),
             'fontSize': '8px',
-            'padding': Perimeter(3),
+            'padding': Perimeter(4),
         },
         'net-address': {
             'fontSize': '11px',
@@ -50,7 +54,27 @@ theme = Theme({
         'clock': {
             'foreground': Color('999'),
             'fontSize': '10px',
-            'padding': Perimeter(2, 4),
+            'padding': Perimeter(4),
+        },
+
+        'workspace': {
+            'foreground': Color('999'),
+        },
+        'workspace-visible': {
+            'foreground': Color('ddd'),
+        },
+        'workspace-focused': {
+            'foreground': Color('f80'),
+            'background': Color('0005'),
+        },
+        'workspace-urgent': {
+            'foreground': Color('f42'),
+            'background': Color('5005'),
+        },
+
+        'mode': {
+            'foreground': Color('fff'),
+            'background': Color('5555'),
         },
 
         # Image styles
@@ -83,7 +107,18 @@ theme = Theme({
         # Graph styles
         'Graph': {
             'padding': Perimeter(3),
-            'trough': Color('222'),
+            'trough': Color('2228'),
+            'foregrounds': [
+                Color('0f0'),  # user
+                Color('f00'),  # kernel
+                Color('00f'),  # nice
+                Color('f0f'),  # swap
+                Color('555'),  # iowait
+            ]
+        },
+        'HistoryGraph': {
+            'padding': Perimeter(1, 4),
+            'trough': Color('0004'),
             'foregrounds': [
                 Color('0f0'),  # user
                 Color('f00'),  # kernel
@@ -96,7 +131,7 @@ theme = Theme({
 })
 
 
-def setupBar(bar):
+def setupBar(bar, outputs, i3conn):
     #bar.addChunkCenter(chunks.Text('xcffibär', styles='title'))
 
     clock = chunks.Text(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
@@ -106,36 +141,50 @@ def setupBar(bar):
         bar.paint()
     addInterval(0.01, updateClock)
 
-    cpuGraph = chunks.Graph(maxValue=100, width=100, height=17)
-    cpuGraph2 = chunks.Graph(maxValue=100, width=100, height=17, reverse=True)
-    cpuGraph3 = [
-        chunks.Graph(maxValue=100, width=10, height=17, vertical=True)
-        for idx in range(15)
-    ]
-    cpuGraph4 = chunks.Graph(maxValue=100, width=10, height=17, reverse=True, vertical=True)
-    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=50, height=17)
+    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=50, height=21)
 
     def updateCPUGraph():
         cpuPercents = statgrab.sg_get_cpu_percents()
-        values = [
+        cpuHistoryGraph.values = [
             cpuPercents['user'],
             cpuPercents['kernel'],
             cpuPercents['nice'],
             cpuPercents['swap'],
             cpuPercents['iowait'],
         ]
-        cpuGraph.values = values
-        cpuGraph2.values = values
-        for idx, graph in enumerate(cpuGraph3):
-            graph.values = cpuGraph3[idx + 1].values if idx + 1 < len(cpuGraph3) else values
-        cpuGraph4.values = values
-        cpuHistoryGraph.values = values
         bar.paint()
     addInterval(0.5, updateCPUGraph)
 
+    def onWorkspaceClick(workspace):
+        i3conn.command(f'workspace {workspace.name}')
+    i3Workspaces = chunks.Switcher(
+        choices=[workspace for workspace in i3conn.get_workspaces() if workspace['output'] in outputs],
+        choiceStylePrefix='workspace',
+        onClick=onWorkspaceClick,
+    )
+
+    def onWorkspaceUpdate(_i3conn, event):
+        printInfo('onWorkspaceUpdate:')
+        inspect(event)
+        i3Workspaces.choices = [workspace for workspace in i3conn.get_workspaces() if workspace['output'] in outputs]
+    i3conn.on('workspace::focus', onWorkspaceUpdate)
+    i3conn.on('workspace::urgent', onWorkspaceUpdate)
+    i3conn.on('workspace::empty', onWorkspaceUpdate)
+
+    i3Mode = chunks.Text('', styles='mode')
+
+    def onModeChange(_i3conn, event):
+        printInfo('onModeChange:')
+        inspect(event)
+        i3Mode.text = '' if event.change == 'default' else event.change
+    i3conn.on('mode', onModeChange)
+
+    ##############
+
     bar.addLeft(
+        i3Workspaces,
+        i3Mode,
         chunks.Text('xcffibär', styles='title'),
-        cpuGraph,
     )
 
     bar.addRight(
@@ -155,15 +204,12 @@ def setupBar(bar):
 
         #chunks.Separator(width=8, height=18),
 
-        cpuGraph2,
-        *cpuGraph3,
-        cpuGraph4,
         cpuHistoryGraph,
     )
 
 
 def handleWindowEvent(event):
-    print('\x1b[93mIncoming %s:\x1b[m' % (event.__class__.__name__, ))
+    printInfo(f'Incoming {event.__class__.__name__}:')
     inspect(event)
 
     windowID = event.window if hasattr(event, 'window') else event.event
@@ -179,70 +225,113 @@ def run():
 
     initAtoms(conn)
 
-    rootDepth = screens[SCREEN_INDEX].root_depth
-    rootVisual = screens[SCREEN_INDEX].root_visual
-
     depthInfo = [
         d
         for d in conn.get_setup().roots.list[SCREEN_INDEX].allowed_depths.list
-        if d.depth == rootDepth
+        if d.depth == 32
     ][0]
+
+    printInfo('depthInfo:')
+    inspect(depthInfo)
 
     visualType = [
         v
         for v in depthInfo.visuals.list
-        if v.visual_id == rootVisual
+        if v._class == xcffib.xproto.VisualClass.TrueColor  # pylint: disable=protected-access
     ][0]
 
-    dummy = Window(conn, screens[SCREEN_INDEX], visualType.visual_id)
+    printInfo('visualType:')
+    inspect(visualType)
 
-    print('GetScreenResources:')
+    xSetup = XSetup(conn, screens[SCREEN_INDEX], depthInfo, visualType, theme)
+
+    dummy = Window(xSetup)
+
+    printInfo('GetScreenResources:')
     screenResources = conn.randr.GetScreenResources(dummy.id).reply()
     inspect(screenResources)
 
     statgrab.sg_init()
 
+    i3conn = i3ipc.Connection()
+
     crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
     for crtc, crtcInfoCookie in crtcInfoCookies:
         crtcInfo = crtcInfoCookie.reply()
         if crtcInfo.num_outputs:
-            print(f'Creating bar for crtc {crtc}.')
-            setupBar(Bar(conn, screens[SCREEN_INDEX], visualType, theme, height=17, screenExtents=crtcInfo))
+            printInfo(f'Creating bar for crtc {crtc}.')
+            outputs = [
+                conn.randr.GetOutputInfo(output, 0).reply().name.raw.decode('utf8')
+                for output in crtcInfo.outputs
+            ]
+            printInfo('outputs:', outputs)
+            setupBar(Bar(xSetup, height=21, screenExtents=crtcInfo, name=outputs[0]), outputs, i3conn)
         else:
             print(f'(crtc {crtc} disabled)')
 
     dummy.close()
 
-    while True:
-        try:
-            #event = conn.wait_for_event()
-            event = conn.poll_for_event()
-        except xcffib.ProtocolException as error:
-            print("\x1b[91mProtocol error %s received!\x1b[m" % (error.__class__.__name__, ))
-            break
-        except Exception as error:  # pylint: disable=broad-except
-            print("\x1b[91mUnexpected %s received:\x1b[m %s" % (error.__class__.__name__, error))
-            inspect(error)
-            break
+    loop = asyncio.get_event_loop()
 
-        if event:
+    def shutdown():
+        printInfo('Shutting down.')
+        loop.stop()
+
+    def xcbPoll():
+        while True:
+            try:
+                #event = conn.wait_for_event()
+                event = conn.poll_for_event()
+            except xcffib.ProtocolException as error:
+                printError(f'Protocol error {error.__class__.__name__} received!')
+                shutdown()
+                break
+            except Exception as error:  # pylint: disable=broad-except
+                printError(f'Unexpected {error.__class__.__name__} received:', error)
+                inspect(error)
+                shutdown()
+                break
+
+            if conn.has_error():
+                printError('Connection error received!')
+                shutdown()
+                break
+
+            elif not event:
+                break
+
             try:
                 handleWindowEvent(event)
             except QuitApplication:
+                shutdown()
                 break
 
-        elif conn.has_error():
-            print("\x1b[91mConnection error received!\x1b[m")
-            break
+    #TODO: Rework timers to use `asyncio.ensure_future`
+    # See: https://stackoverflow.com/questions/45419723/python-timer-with-asyncio-coroutine#45430833
+    async def runTimers():
+        while True:
+            await asyncio.sleep(TICK_LENGTH)
 
-        else:
-            time.sleep(TICK_LENGTH)
+            triggerElapsedTimers()
 
-        triggerElapsedTimers()
+    try:
+        i3conn.event_socket_setup()
 
-    for window in Window.windowsByID.values():
-        if hasattr(window, 'cleanUp') and callable(window.cleanUp):
-            window.cleanUp()
+        loop.add_reader(conn.get_file_descriptor(), xcbPoll)
+        loop.add_reader(i3conn.sub_socket, i3conn.event_socket_poll)
+
+        loop.create_task(runTimers())
+        loop.run_forever()
+
+    finally:
+        i3conn.event_socket_teardown()
+
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()
+
+        for window in Window.windowsByID.values():
+            if hasattr(window, 'cleanUp') and callable(window.cleanUp):
+                window.cleanUp()
 
     conn.disconnect()
 

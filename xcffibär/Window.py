@@ -2,7 +2,7 @@
 
 '''
 # pylint: disable=too-many-arguments
-from xcffib.xproto import CW, EventMask, WindowClass
+from xcffib.xproto import ColormapAlloc, CW, EventMask, WindowClass
 
 
 events = EventMask.ButtonPress | EventMask.EnterWindow \
@@ -57,26 +57,34 @@ def createWindow(
 class Window(object):
     windowsByID = {}
 
-    def __init__(
-            self, connection, screen, visualID, x=0, y=0, width=1, height=1, borderWidth=0, attributes=None,
-            parentID=None):
-        self.connection = connection
-        self.screen = screen
+    def __init__(self, xSetup, x=0, y=0, width=1, height=1, borderWidth=0, attributes=None, parentID=None):
+        self.xSetup = xSetup
+
+        if parentID is None:
+            parentID = self.screen.root
 
         if attributes is None:
             attributes = {}
-        if CW.BackPixel not in attributes:
-            attributes[CW.BackPixel] = screen.black_pixel
+        if CW.BackPixel not in attributes and CW.BackPixmap not in attributes:
+            attributes[CW.BackPixel] = self.screen.black_pixel
+        if CW.BorderPixel not in attributes and CW.BorderPixmap not in attributes:
+            attributes[CW.BorderPixel] = self.screen.black_pixel
+        if CW.Colormap not in attributes:
+            colormap = self.connection.generate_id()
+            self.connection.core.CreateColormapChecked(
+                ColormapAlloc._None,  # pylint: disable=protected-access
+                colormap,
+                parentID,
+                self.visual.visual_id
+            )
+            attributes[CW.Colormap] = colormap
         if CW.EventMask not in attributes:
             attributes[CW.EventMask] = events
 
-        if parentID is None:
-            parentID = screen.root
-
         self.id, cookie = createWindow(  # pylint: disable=invalid-name
-            connection,
+            self.connection,
             (x, y), (width, height),
-            screen.root_depth, visualID,
+            self.depth.depth, visualID=self.visual.visual_id,
             attributes=attributes, parentID=parentID, borderWidth=borderWidth,
             windowClass=WindowClass.InputOutput, checked=True
         )
@@ -84,6 +92,26 @@ class Window(object):
 
         Window.windowsByID[self.id] = self
         print(f'Created window {self.id}')
+
+    @property
+    def connection(self):
+        return self.xSetup.connection
+
+    @property
+    def screen(self):
+        return self.xSetup.screen
+
+    @property
+    def depth(self):
+        return self.xSetup.depth
+
+    @property
+    def visual(self):
+        return self.xSetup.visual
+
+    @property
+    def theme(self):
+        return self.xSetup.theme
 
     def handleEvent(self, event):
         pass

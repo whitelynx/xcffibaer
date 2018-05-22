@@ -109,8 +109,7 @@ class Image(Chunk):
             ctx.set_operator(self.chunkStyle.operator)
 
         if self.chunkStyle.foreground:
-            self.chunkStyle.foreground(ctx)
-            ctx.mask_surface(self.imageSurface)
+            self.chunkStyle.foreground.maskSurface(ctx, self.imageSurface)
         else:
             ctx.set_source_surface(self.imageSurface)
             ctx.paint()

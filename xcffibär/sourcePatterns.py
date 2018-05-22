@@ -57,6 +57,18 @@ class Color(object):
     def __str__(self):
         return '#' + ''.join(hex(int(c * 255))[2:].rjust(2, '0') for c in self.components)
 
+    def paint(self, ctx):
+        self(ctx)
+        ctx.paint()
+
+    def fill(self, ctx):
+        self(ctx)
+        ctx.fill()
+
+    def maskSurface(self, ctx, surface):
+        self(ctx)
+        ctx.mask_surface(surface)
+
 
 if __name__ == '__main__':
     def test(expr):

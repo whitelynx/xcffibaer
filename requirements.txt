@@ -3,7 +3,9 @@ cairocffi==0.8.0
 cffi==1.10.0
 click==6.7
 collist==0.5
-cython==0.28.2
+Cython==0.28.2
+enum-compat==0.0.2
+i3ipc==1.5.1
 packaging==16.8
 pycparser==2.17
 pyparsing==2.2.0

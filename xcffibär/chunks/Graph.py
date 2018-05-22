@@ -31,8 +31,7 @@ class Graph(Chunk):
             ctx.scale(-1, 1)
 
         if self.chunkStyle.trough:
-            self.chunkStyle.trough(ctx)
-            ctx.paint()
+            self.chunkStyle.trough.paint(ctx)
 
         lastPos = 0
         for idx, value in enumerate(self.values):
@@ -40,8 +39,7 @@ class Graph(Chunk):
                 #fg = self.chunkStyle.foregrounds[idx] if self.chunkStyle.foregrounds else self.chunkStyle.foreground
                 #barWidth = round(self.innerWidth * value / self.maxValue)
                 #ctx.rectangle(lastX, 0, barWidth, self.innerHeight)
-                #fg(ctx)
-                #ctx.fill()
+                #fg.fill(ctx)
                 #lastX += barWidth
                 lastPos = self.paintSection(ctx, lastPos, idx, value)
             except ValueError:
@@ -54,6 +52,5 @@ class Graph(Chunk):
         else:
             ctx.rectangle(lastPos, 0, barSize, self.innerHeight)
         foreground = self.chunkStyle.foregrounds[idx] if self.chunkStyle.foregrounds else self.chunkStyle.foreground
-        foreground(ctx)
-        ctx.fill()
+        foreground.fill(ctx)
         return lastPos + barSize

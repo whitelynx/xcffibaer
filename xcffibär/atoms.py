@@ -5,8 +5,11 @@ from .utils import xStr
 
 
 atomNames = [
-    '_NET_WM_NAME',
     'UTF8_STRING',
+    '_NET_WM_NAME',
+    '_NET_WM_WINDOW_TYPE_DOCK',
+    '_NET_WM_STATE_STICKY',
+    '_NET_WM_STATE_ABOVE',
 ]
 atoms = {}
 

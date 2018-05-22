@@ -20,10 +20,12 @@ class Chunk(object):
         self._overrideWidth = width
         self._overrideHeight = height
 
+        self.theme = None
         if theme:
             self.setTheme(theme)
 
     def setTheme(self, theme):
+        self.theme = theme
         self.applyStyle(theme.getChunkStyle(*self.getStyleNames()))
 
     def getStyleNames(self):
@@ -41,8 +43,7 @@ class Chunk(object):
         padding = self.padding
 
         if self.chunkStyle.background:
-            self.chunkStyle.background(ctx)
-            ctx.paint()
+            self.chunkStyle.background.paint(ctx)
 
         ctx.translate(padding[3], padding[0])
         ctx.rectangle(0, 0, self.innerWidth, self.innerHeight)
