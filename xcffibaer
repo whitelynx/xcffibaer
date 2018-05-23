@@ -279,6 +279,14 @@ def run():
 
     i3conn = i3ipc.Connection()
 
+    wrappedI3Command = i3conn.command
+
+    def i3Command(command):
+        print(f'Sending i3 command: {repr(command)}')
+        wrappedI3Command(command)
+
+    i3conn.command = i3Command
+
     crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
     for crtc, crtcInfoCookie in crtcInfoCookies:
         crtcInfo = crtcInfoCookie.reply()
