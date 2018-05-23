@@ -59,6 +59,7 @@ theme = Theme({
 
         'workspace': {
             'foreground': Color('999'),
+            'padding': Perimeter(3, 8, 4, 8),
         },
         'workspace-visible': {
             'foreground': Color('ddd'),
