@@ -8,6 +8,8 @@ class Chunk(object):
     def __init__(self, theme=None, styles=None, width=None, height=None):
         self.context = None
         self.chunkStyle = None
+        self.theme = None
+        self._styles = []
 
         if styles is None:
             styles = []
@@ -20,9 +22,18 @@ class Chunk(object):
         self._overrideWidth = width
         self._overrideHeight = height
 
-        self.theme = None
         if theme:
             self.setTheme(theme)
+
+    @property
+    def styles(self):
+        return self._styles
+
+    @styles.setter
+    def styles(self, styles):
+        self._styles = styles
+        if self.theme:
+            self.setTheme(self.theme)
 
     def setTheme(self, theme):
         self.theme = theme
