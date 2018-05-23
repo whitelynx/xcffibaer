@@ -24,6 +24,15 @@ paintFinishMethod = None
 #paintFinishMethod = 'show_page'
 #paintFinishMethod = 'copy_page'
 
+buttonNames = {
+    1: 'left button',
+    2: 'middle button',
+    3: 'right button',
+    4: 'wheel up',
+    5: 'wheel down',
+    8: 'back button',
+}
+
 
 class Bar(Window):
     def __init__(self, xSetup, height=16, bottom=False, screenExtents=None, name=''):
@@ -64,6 +73,7 @@ class Bar(Window):
         ]
 
         self.chunks = Chunks([], [])
+        self.chunkExtents = {}
 
         self.lastWidth = width
         self.lastHeight = height
@@ -108,12 +118,15 @@ class Bar(Window):
             context.paint()
             context.restore()
 
+        chunkExtents = {}
+
         lastX = 0
         for chunk in self.chunks.left:
             with context:
                 chunk.setContext(context)
 
                 width, height = chunk.getSize()
+                chunkExtents[chunk] = (lastX, lastX + width)
 
                 context.rectangle(lastX, 0, width, height)
                 context.clip()
@@ -129,6 +142,7 @@ class Bar(Window):
                 chunk.setContext(context)
 
                 width, height = chunk.getSize()
+                chunkExtents[chunk] = (lastX, lastX + width)
 
                 lastX -= width
 
@@ -142,6 +156,8 @@ class Bar(Window):
             getattr(self.surface, paintFinishMethod)()
 
         self.connection.flush()
+
+        self.chunkExtents = chunkExtents
 
     def handleEvent(self, event):
         if isinstance(event, ExposeEvent):
@@ -167,11 +183,20 @@ class Bar(Window):
             print('Leave (%d, %d)' % (event.event_x, event.event_y))
 
         elif isinstance(event, ButtonPressEvent):
-            print('Button %d down' % event.detail)
-            raise QuitApplication()
+            print(f'{buttonNames.get(event.detail, f"button {event.detail}")} down')
+            if event.detail == 3:
+                raise QuitApplication()
+            else:
+                self.onClick(event)
 
         else:
             super().handleEvent(event)
+
+    def onClick(self, event):
+        for chunk, (startX, endX) in self.chunkExtents.items():
+            if startX <= event.event_x < endX:
+                chunk.onClick(event, event.event_x - startX, event.event_y)
+                return
 
     def cleanUp(self):
         #self.connection.core.FreeGC(self.gc)

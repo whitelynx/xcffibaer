@@ -11,7 +11,7 @@ import xcffib.render
 import xcffib.randr
 
 import i3ipc
-
+import netifaces
 import statgrab
 
 from xcffibär.sourcePatterns import Color
@@ -29,7 +29,7 @@ SCREEN_INDEX = 0
 theme = Theme({
     'foreground': Color('8f8'),
     #'background': Color('222'),
-    'background': Color('000a'),
+    'background': Color('000c'),
     'defaultChunkStyle': {
         'foreground': Color('fff'),
         'background': Color('0000'),
@@ -79,20 +79,20 @@ theme = Theme({
 
         # Image styles
         'icon': {
-            'padding': Perimeter(0, 1, 1, 1),
+            'padding': Perimeter(2, 1, 3, 1),
         },
         'icon-clock': {
             'image': '/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
-            'padding': Perimeter(1, 0, 0, 1),
+            'padding': Perimeter(3, 0, 2, 1),
             'foreground': Color('448'),
         },
         'icon-net-wired': {
             'image': '/usr/share/icons/Adwaita/16x16/devices/network-wired-symbolic.symbolic.png',
-            'padding': Perimeter(0, 0, 1, 1),
+            'padding': Perimeter(2, 0, 3, 1),
         },
         'icon-net-wireless': {
             'image': '/usr/share/icons/Adwaita/16x16/devices/network-wireless-symbolic.symbolic.png',
-            'padding': Perimeter(0, 0, 1, 0),
+            'padding': Perimeter(2, 0, 3, 0),
         },
         'icon-info': {
             'foreground': Color('888'),
@@ -141,7 +141,7 @@ def setupBar(bar, outputs, i3conn):
         bar.paint()
     addInterval(0.01, updateClock)
 
-    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=50, height=21)
+    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=75, height=21)
 
     def updateCPUGraph():
         cpuPercents = statgrab.sg_get_cpu_percents()
@@ -160,7 +160,7 @@ def setupBar(bar, outputs, i3conn):
     i3Workspaces = chunks.Switcher(
         choices=[workspace for workspace in i3conn.get_workspaces() if workspace['output'] in outputs],
         choiceStylePrefix='workspace',
-        onClick=onWorkspaceClick,
+        onChoiceClick=onWorkspaceClick,
     )
 
     def onWorkspaceUpdate(_i3conn, event):
@@ -179,6 +179,23 @@ def setupBar(bar, outputs, i3conn):
         i3Mode.text = '' if event.change == 'default' else event.change
     i3conn.on('mode', onModeChange)
 
+    ethernetIPText = chunks.Text('', styles='net-address')
+    wifiIPText = chunks.Text('', styles='net-address')
+
+    def updateNetwork():
+        ethernetAddresses = []
+        wifiAddresses = []
+        for interface in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(interface).get(netifaces.AF_INET)
+            if addrs:
+                if interface[0] == 'e':
+                    ethernetAddresses.extend(addr['addr'] for addr in addrs)
+                elif interface[0] == 'w':
+                    wifiAddresses.extend(addr['addr'] for addr in addrs)
+        ethernetIPText.text = ', '.join(ethernetAddresses)
+        wifiIPText.text = ', '.join(wifiAddresses)
+    addInterval(0.5, updateNetwork)
+
     ##############
 
     bar.addLeft(
@@ -194,12 +211,12 @@ def setupBar(bar, outputs, i3conn):
 
         #chunks.Separator(width=8, height=18),
 
-        chunks.Text('192.168.128.98', styles='net-address'),
+        ethernetIPText,
         chunks.Image(styles='icon-net-wired icon-active icon'),
 
         #chunks.Separator(width=8, height=18),
 
-        chunks.Text(''),
+        wifiIPText,
         chunks.Image(styles='icon-net-wireless icon-inactive icon'),
 
         #chunks.Separator(width=8, height=18),

@@ -1,7 +1,7 @@
 '''Base Chunk class
 
 '''
-from ..utils import Perimeter
+from ..utils import Perimeter, printWarning
 
 
 class Chunk(object):
@@ -57,6 +57,9 @@ class Chunk(object):
     @property
     def padding(self):
         return self.chunkStyle.padding or Perimeter(0)
+
+    def onClick(self, event, clickX, clickY):
+        printWarning(f'{self.__class__.__name__}: Unhandled button {event.detail} click at ({clickX}, {clickY}).')
 
     # Intrinsic inner dimensions
     def updateIntrinsicSize(self):
