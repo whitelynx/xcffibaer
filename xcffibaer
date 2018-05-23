@@ -145,14 +145,13 @@ theme = Theme({
 def setupBar(bar, outputs, i3conn):
     # Clock
     clockFormat = '%Y-%m-%d %H:%M:%S.%f'
-    clockFormatAlt = f'{clockFormat} (Berlin)'
     altTimezone = gettz('Europe/Berlin')
-    clock = chunks.Text(datetime.now().strftime(clockFormat), styles='clock')
-    clockAlt = chunks.Text(datetime.now(altTimezone).strftime(clockFormatAlt), styles='clock-alt clock')
+    clock = chunks.Text(datetime.now().strftime(clockFormat)[:-3], styles='clock')
+    clockAlt = chunks.Text(datetime.now(altTimezone).strftime(clockFormat)[:-3] + ' (Berlin)', styles='clock-alt clock')
 
     def updateClock():
-        clock.text = datetime.now().strftime(clockFormat)
-        clockAlt.text = datetime.now(altTimezone).strftime(clockFormatAlt)
+        clock.text = datetime.now().strftime(clockFormat)[:-3]
+        clockAlt.text = datetime.now(altTimezone).strftime(clockFormat)[:-3] + ' (Berlin)'
         bar.paint()
     addInterval(0.01, updateClock)
 
