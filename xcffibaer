@@ -180,7 +180,9 @@ def setupBar(bar, outputs, i3conn):
     i3conn.on('mode', onModeChange)
 
     ethernetIPText = chunks.Text('', styles='net-address')
+    ethernetIcon = chunks.Image(styles='icon-net-wired icon icon-active')
     wifiIPText = chunks.Text('', styles='net-address')
+    wifiIcon = chunks.Image(styles='icon-net-wireless icon icon-inactive')
 
     def updateNetwork():
         ethernetAddresses = []
@@ -192,8 +194,12 @@ def setupBar(bar, outputs, i3conn):
                     ethernetAddresses.extend(addr['addr'] for addr in addrs)
                 elif interface[0] == 'w':
                     wifiAddresses.extend(addr['addr'] for addr in addrs)
+
         ethernetIPText.text = ', '.join(ethernetAddresses)
+        ethernetIcon.styles = [*ethernetIcon.styles[:-1], 'icon-active' if ethernetAddresses else 'icon-inactive']
+
         wifiIPText.text = ', '.join(wifiAddresses)
+        wifiIcon.styles = [*wifiIcon.styles[:-1], 'icon-active' if wifiAddresses else 'icon-inactive']
     addInterval(0.5, updateNetwork)
 
     ##############
@@ -212,12 +218,12 @@ def setupBar(bar, outputs, i3conn):
         #chunks.Separator(width=8, height=18),
 
         ethernetIPText,
-        chunks.Image(styles='icon-net-wired icon-active icon'),
+        ethernetIcon,
 
         #chunks.Separator(width=8, height=18),
 
         wifiIPText,
-        chunks.Image(styles='icon-net-wireless icon-inactive icon'),
+        wifiIcon,
 
         #chunks.Separator(width=8, height=18),
 
