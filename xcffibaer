@@ -4,6 +4,7 @@
 '''
 import asyncio
 import os
+import sys
 from datetime import datetime
 
 import xcffib
@@ -46,7 +47,7 @@ theme = Theme({
         'title': {
             'foreground': Color('555'),
             'fontSize': '8px',
-            'padding': Perimeter(4),
+            'padding': Perimeter(6, 4, 4),
         },
         'net-address': {
             'fontSize': '11px',
@@ -75,7 +76,12 @@ theme = Theme({
 
         'mode': {
             'foreground': Color('fff'),
-            'background': Color('5555'),
+            'background': Color('5855'),
+            'fontSize': '8px',
+            'padding': Perimeter(6, 8, 4),
+        },
+        'hidden': {
+            'padding': Perimeter(0),
         },
 
         # Image styles
@@ -133,8 +139,7 @@ theme = Theme({
 
 
 def setupBar(bar, outputs, i3conn):
-    #bar.addChunkCenter(chunks.Text('xcffibär', styles='title'))
-
+    # Clock
     clock = chunks.Text(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
 
     def updateClock():
@@ -142,7 +147,8 @@ def setupBar(bar, outputs, i3conn):
         bar.paint()
     addInterval(0.01, updateClock)
 
-    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=75, height=21)
+    # CPU usage
+    cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=100, height=21)
 
     def updateCPUGraph():
         cpuPercents = statgrab.sg_get_cpu_percents()
@@ -154,8 +160,9 @@ def setupBar(bar, outputs, i3conn):
             cpuPercents['iowait'],
         ]
         bar.paint()
-    addInterval(0.5, updateCPUGraph)
+    addInterval(0.2, updateCPUGraph)
 
+    # i3 workspaces
     def onWorkspaceClick(workspace):
         i3conn.command(f'workspace {workspace.name}')
     i3Workspaces = chunks.Switcher(
@@ -172,14 +179,17 @@ def setupBar(bar, outputs, i3conn):
     i3conn.on('workspace::urgent', onWorkspaceUpdate)
     i3conn.on('workspace::empty', onWorkspaceUpdate)
 
-    i3Mode = chunks.Text('', styles='mode')
+    # i3 mode display
+    i3Mode = chunks.Text('', styles='hidden')
 
     def onModeChange(_i3conn, event):
         printInfo('onModeChange:')
         inspect(event)
         i3Mode.text = '' if event.change == 'default' else event.change
+        i3Mode.styles = ['hidden'] if event.change == 'default' else ['mode']
     i3conn.on('mode', onModeChange)
 
+    # Networking
     ethernetIPText = chunks.Text('', styles='net-address')
     ethernetIcon = chunks.Image(styles='icon-net-wired icon icon-active')
     wifiIPText = chunks.Text('', styles='net-address')
@@ -203,13 +213,14 @@ def setupBar(bar, outputs, i3conn):
         wifiIcon.styles = [*wifiIcon.styles[:-1], 'icon-active' if wifiAddresses else 'icon-inactive']
     addInterval(0.5, updateNetwork)
 
-    ##############
-
+    # Bar layout
     bar.addLeft(
         i3Workspaces,
         i3Mode,
         chunks.Text('xcffibär', styles='title'),
     )
+
+    #bar.addCenter(chunks.Text('xcffibär', styles='title'))
 
     bar.addRight(
         clock,
@@ -283,6 +294,7 @@ def run():
 
     def i3Command(command):
         print(f'Sending i3 command: {repr(command)}')
+        sys.stdout.flush()
         wrappedI3Command(command)
 
     i3conn.command = i3Command

@@ -1,7 +1,7 @@
 '''X11 atom cache
 
 '''
-from .utils import xStr
+from .utils import printInfo, xStr
 
 
 atomNames = [
@@ -15,7 +15,7 @@ atoms = {}
 
 
 def initAtoms(conn):
-    print('\x1b[92mInitializing atoms...\x1b[m')
+    printInfo('Initializing atoms...')
 
     atomCookies = dict(
         (name, conn.core.InternAtom(False, *xStr(name)))

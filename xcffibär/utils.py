@@ -43,14 +43,17 @@ def color(colorNum, message):
 
 def printError(message, *args):
     print(' '.join([color(91, message), *(str(arg) for arg in args)]), file=sys.stderr)
+    sys.stderr.flush()
 
 
 def printWarning(message, *args):
     print(' '.join([color('38;5;202', message), *(str(arg) for arg in args)]), file=sys.stderr)
+    sys.stderr.flush()
 
 
 def printInfo(message, *args):
     print(' '.join([color(93, message), *(str(arg) for arg in args)]))
+    sys.stdout.flush()
 
 
 def inspect(obj, attrFilter=publicDataAttrs):
@@ -61,6 +64,7 @@ def inspect(obj, attrFilter=publicDataAttrs):
             #print('  %s: %r' % (key, val))
             output.append('  \x1b[96m%s:\x1b[m %r' % (key, val))
     print(collist(output) if sys.stdout.isatty() else '\n'.join(output))
+    sys.stdout.flush()
 
 
 def topStrut(width, height, left=0):
