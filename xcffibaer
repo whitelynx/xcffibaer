@@ -11,6 +11,7 @@ import xcffib
 import xcffib.render
 import xcffib.randr
 
+from dateutil.tz import gettz
 import i3ipc
 import netifaces
 import statgrab
@@ -53,9 +54,12 @@ theme = Theme({
             'fontSize': '11px',
         },
         'clock': {
-            'foreground': Color('999'),
+            'foreground': Color('bbb'),
             'fontSize': '10px',
             'padding': Perimeter(4),
+        },
+        'clock-alt': {
+            'foreground': Color('777'),
         },
 
         'workspace': {
@@ -140,10 +144,15 @@ theme = Theme({
 
 def setupBar(bar, outputs, i3conn):
     # Clock
-    clock = chunks.Text(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), styles='clock')
+    clockFormat = '%Y-%m-%d %H:%M:%S.%f'
+    clockFormatAlt = f'{clockFormat} (Berlin)'
+    altTimezone = gettz('Europe/Berlin')
+    clock = chunks.Text(datetime.now().strftime(clockFormat), styles='clock')
+    clockAlt = chunks.Text(datetime.now(altTimezone).strftime(clockFormatAlt), styles='clock-alt clock')
 
     def updateClock():
-        clock.text = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+        clock.text = datetime.now().strftime(clockFormat)
+        clockAlt.text = datetime.now(altTimezone).strftime(clockFormatAlt)
         bar.paint()
     addInterval(0.01, updateClock)
 
@@ -224,6 +233,7 @@ def setupBar(bar, outputs, i3conn):
 
     bar.addRight(
         clock,
+        clockAlt,
         #chunks.Image('/usr/share/icons/Moka/16x16/apps/clock.png', styles='icon'),
         chunks.Image(styles='icon-clock icon'),
 
