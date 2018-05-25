@@ -155,6 +155,35 @@ def setupStore(store, i3conn):
         store['cpu.percents'] = statgrab.sg_get_cpu_percents()
     addInterval(0.2, updateCPUStats)
 
+    def onWorkspaceUpdate(_i3conn, event):
+        printInfo('onWorkspaceUpdate:')
+        inspect(event)
+        store['i3.workspaces'] = i3conn.get_workspaces()
+    i3conn.on('workspace::focus', onWorkspaceUpdate)
+    i3conn.on('workspace::urgent', onWorkspaceUpdate)
+    i3conn.on('workspace::empty', onWorkspaceUpdate)
+
+    def onModeChange(_i3conn, event):
+        printInfo('onModeChange:')
+        inspect(event)
+        store['i3.mode'] = event.change
+    i3conn.on('mode', onModeChange)
+
+    def updateNetwork():
+        ethernetAddresses = []
+        wifiAddresses = []
+        for interface in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(interface).get(netifaces.AF_INET)
+            if addrs:
+                if interface[0] == 'e':
+                    ethernetAddresses.extend(addr['addr'] for addr in addrs)
+                elif interface[0] == 'w':
+                    wifiAddresses.extend(addr['addr'] for addr in addrs)
+
+        store['network.addresses.ethernet'] = ethernetAddresses
+        store['network.addresses.wifi'] = wifiAddresses
+    addInterval(0.5, updateNetwork)
+
 
 def setupBar(bar, store, outputs, i3conn):
     # Clock
@@ -183,23 +212,19 @@ def setupBar(bar, store, outputs, i3conn):
         onChoiceClick=onWorkspaceClick,
     )
 
-    def onWorkspaceUpdate(_i3conn, event):
-        printInfo('onWorkspaceUpdate:')
-        inspect(event)
-        i3Workspaces.choices = [workspace for workspace in i3conn.get_workspaces() if workspace['output'] in outputs]
-    i3conn.on('workspace::focus', onWorkspaceUpdate)
-    i3conn.on('workspace::urgent', onWorkspaceUpdate)
-    i3conn.on('workspace::empty', onWorkspaceUpdate)
+    def onWorkspaceUpdate():
+        i3Workspaces.choices = [workspace for workspace in store['i3.workspaces'] if workspace['output'] in outputs]
+        #i3Workspaces.choices = [workspace for workspace in i3conn.get_workspaces() if workspace['output'] in outputs]
+    store.watch('i3.workspaces', onWorkspaceUpdate)
 
     # i3 mode display
     i3Mode = chunks.Text('', styles='hidden')
 
-    def onModeChange(_i3conn, event):
-        printInfo('onModeChange:')
-        inspect(event)
-        i3Mode.text = '' if event.change == 'default' else event.change
-        i3Mode.styles = ['hidden'] if event.change == 'default' else ['mode']
-    i3conn.on('mode', onModeChange)
+    def onModeChange():
+        mode = store['i3.mode']
+        i3Mode.text = '' if mode == 'default' else mode
+        i3Mode.styles = ['hidden'] if mode == 'default' else ['mode']
+    store.watch('i3.mode', onModeChange)
 
     # Networking
     ethernetIPText = chunks.Text('', styles='net-address')
@@ -207,23 +232,15 @@ def setupBar(bar, store, outputs, i3conn):
     wifiIPText = chunks.Text('', styles='net-address')
     wifiIcon = chunks.Image(styles='icon-net-wireless icon icon-inactive')
 
-    def updateNetwork():
-        ethernetAddresses = []
-        wifiAddresses = []
-        for interface in netifaces.interfaces():
-            addrs = netifaces.ifaddresses(interface).get(netifaces.AF_INET)
-            if addrs:
-                if interface[0] == 'e':
-                    ethernetAddresses.extend(addr['addr'] for addr in addrs)
-                elif interface[0] == 'w':
-                    wifiAddresses.extend(addr['addr'] for addr in addrs)
-
+    def updateNetworkAddresses():
+        ethernetAddresses = store['network.addresses.ethernet']
         ethernetIPText.text = ', '.join(ethernetAddresses)
         ethernetIcon.styles = [*ethernetIcon.styles[:-1], 'icon-active' if ethernetAddresses else 'icon-inactive']
 
+        wifiAddresses = store['network.addresses.wifi']
         wifiIPText.text = ', '.join(wifiAddresses)
         wifiIcon.styles = [*wifiIcon.styles[:-1], 'icon-active' if wifiAddresses else 'icon-inactive']
-    addInterval(0.5, updateNetwork)
+    store.watch('network.addresses', updateNetworkAddresses)
 
     # Bar layout
     bar.addLeft(
