@@ -21,7 +21,7 @@ from xcffibär.Theme import Theme
 from xcffibär.atoms import initAtoms
 from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo
 from xcffibär.timers import addInterval, triggerElapsedTimers
-from xcffibär import Bar, chunks, Window, XSetup
+from xcffibär import Bar, chunks, Store, Window, XSetup
 
 
 TICK_LENGTH = 0.005
@@ -142,33 +142,37 @@ theme = Theme({
 })
 
 
-def setupBar(bar, outputs, i3conn):
-    # Clock
+def setupStore(store, i3conn):
     clockFormat = '%Y-%m-%d %H:%M:%S.%f'
     altTimezone = gettz('Europe/Berlin')
-    clock = chunks.Text(datetime.now().strftime(clockFormat)[:-3], styles='clock')
-    clockAlt = chunks.Text(datetime.now(altTimezone).strftime(clockFormat)[:-3] + ' (Berlin)', styles='clock-alt clock')
 
     def updateClock():
-        clock.text = datetime.now().strftime(clockFormat)[:-3]
-        clockAlt.text = datetime.now(altTimezone).strftime(clockFormat)[:-3] + ' (Berlin)'
-        bar.paint()
-    addInterval(0.01, updateClock)
+        store['time.local'] = datetime.now().strftime(clockFormat)[:-5]
+        store['time.berlin'] = datetime.now(altTimezone).strftime(clockFormat)[:-5]
+    addInterval(0.1, updateClock)
+
+    def updateCPUStats():
+        store['cpu.percents'] = statgrab.sg_get_cpu_percents()
+    addInterval(0.2, updateCPUStats)
+
+
+def setupBar(bar, store, outputs, i3conn):
+    # Clock
+    clock = chunks.Text(store.template('{time.local}'), styles='clock')
+    clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock-alt clock')
 
     # CPU usage
     cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=100, height=21)
 
     def updateCPUGraph():
-        cpuPercents = statgrab.sg_get_cpu_percents()
         cpuHistoryGraph.values = [
-            cpuPercents['user'],
-            cpuPercents['kernel'],
-            cpuPercents['nice'],
-            cpuPercents['swap'],
-            cpuPercents['iowait'],
+            store['cpu.percents.user'],
+            store['cpu.percents.kernel'],
+            store['cpu.percents.nice'],
+            store['cpu.percents.swap'],
+            store['cpu.percents.iowait'],
         ]
-        bar.paint()
-    addInterval(0.2, updateCPUGraph)
+    store.watch('cpu.percents', updateCPUGraph)
 
     # i3 workspaces
     def onWorkspaceClick(workspace):
@@ -299,6 +303,15 @@ def run():
 
     i3conn = i3ipc.Connection()
 
+    bars = []
+
+    def paintBars():
+        for bar in bars:
+            bar.paint()
+
+    store = Store(paintBars)
+    setupStore(store, i3conn)
+
     wrappedI3Command = i3conn.command
 
     def i3Command(command):
@@ -318,7 +331,9 @@ def run():
                 for output in crtcInfo.outputs
             ]
             printInfo('outputs:', outputs)
-            setupBar(Bar(xSetup, height=21, screenExtents=crtcInfo, name=outputs[0]), outputs, i3conn)
+            bar = Bar(xSetup, height=21, screenExtents=crtcInfo, name=outputs[0])
+            setupBar(bar, store, outputs, i3conn)
+            bars.append(bar)
         else:
             print(f'(crtc {crtc} disabled)')
 
