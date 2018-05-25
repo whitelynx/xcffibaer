@@ -27,6 +27,18 @@ class TemplateString(object):
         return str(self)
 
 
+class Ref(object):
+    def __init__(self, store, keyExpr):
+        self.store = store
+        self.keyExpr = keyExpr
+
+    def __call__(self):
+        return self.store[self.keyExpr]
+
+    def watch(self, callback):
+        self.store.watch(self.keyExpr, callback)
+
+
 class Store(object):
     '''A data store.
 
@@ -93,6 +105,9 @@ class Store(object):
 
     def watch(self, keyExpr, callback):
         self.watchers[keyExpr].append(callback)
+
+    def ref(self, keyExpr):
+        return Ref(self, keyExpr)
 
     def update(self):
         self.awaitingUpdate = False
