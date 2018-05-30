@@ -59,6 +59,7 @@ class Window(object):
 
     def __init__(self, xSetup, x=0, y=0, width=1, height=1, borderWidth=0, attributes=None, parentID=None):
         self.xSetup = xSetup
+        self.closing = False
 
         if parentID is None:
             parentID = self.screen.root
@@ -118,4 +119,5 @@ class Window(object):
 
     def close(self):
         print(f'Destroying window {self.id}')
+        self.closing = True
         self.connection.core.DestroyWindowChecked(self.id).check()

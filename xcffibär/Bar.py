@@ -110,6 +110,9 @@ class Bar(Window):
             self.addChunkRight(chunk)
 
     def paint(self):
+        if self.closing:
+            return
+
         context = cairocffi.Context(self.surface)
         with context:
             context.save()
@@ -160,6 +163,9 @@ class Bar(Window):
         self.chunkExtents = chunkExtents
 
     def handleEvent(self, event):
+        if self.closing:
+            return
+
         if isinstance(event, ExposeEvent):
             self.paint()
 
