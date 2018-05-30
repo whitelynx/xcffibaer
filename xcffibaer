@@ -21,7 +21,7 @@ from xcffibär.Theme import Theme
 from xcffibär.atoms import initAtoms
 from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo
 from xcffibär.timers import addInterval, triggerElapsedTimers
-from xcffibär import Bar, chunks, Store, Window, XSetup
+from xcffibär import Bar, chunks, FSReader, Store, Window, XSetup
 
 
 TICK_LENGTH = 0.005
@@ -184,6 +184,11 @@ def setupStore(store, i3conn):
         store['network.addresses.wifi'] = wifiAddresses
     addInterval(0.5, updateNetwork)
 
+    def tempTransform(value):
+        return int(value) / 1000.0
+    FSReader('/sys/class/thermal/thermal_zone3/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.2)
+    FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.2)
+
 
 def setupBar(bar, store, outputs, i3conn):
     # Clock
@@ -202,6 +207,15 @@ def setupBar(bar, store, outputs, i3conn):
             store['cpu.percents.iowait'],
         ]
     store.watch('cpu.percents', updateCPUGraph)
+
+    # Temperature
+    temperatureCPU = chunks.Text('', styles='temperature-cpu temperature')
+    temperatureWiFi = chunks.Text('', styles='temperature-cpu temperature')
+
+    def updateTemperatures():
+        temperatureCPU.text = store['temp.cpu.die']
+        temperatureWiFi.text = store['temp.wifi']
+    store.watch('temp', updateTemperatures)
 
     # i3 workspaces
     def onWorkspaceClick(workspace):
@@ -270,6 +284,11 @@ def setupBar(bar, store, outputs, i3conn):
         #chunks.Separator(width=8, height=18),
 
         cpuHistoryGraph,
+
+        #chunks.Image(styles='icon-temperature icon'),
+        chunks.Text('🌡', styles='icon'),
+        temperatureCPU,
+        temperatureWiFi,
     )
 
 

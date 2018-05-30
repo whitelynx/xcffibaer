@@ -3,9 +3,10 @@
 '''
 from . import chunks
 from .Bar import Bar
+from .FSReader import FSReader
 from .Store import Store
 from .Window import Window
 from .XSetup import XSetup
 
 
-__all__ = ['chunks', 'Bar', 'Store', 'Window', 'XSetup']
+__all__ = ['chunks', 'Bar', 'FSReader', 'Store', 'Window', 'XSetup']

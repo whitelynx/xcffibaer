@@ -90,7 +90,7 @@ class Store(object):
             callback()
 
     def scheduleWatchers(self, keyExpr):
-        if not self.awaitingWatchers[keyExpr]:
+        if self.watchers[keyExpr] and not self.awaitingWatchers[keyExpr]:
             self.awaitingWatchers[keyExpr] = True
             addImmediate(lambda: self.callWatchers(keyExpr))
 
