@@ -10,6 +10,7 @@ from datetime import datetime
 import xcffib
 import xcffib.render
 import xcffib.randr
+from xcffib.randr import NotifyMask, ScreenChangeNotifyEvent
 
 from dateutil.tz import gettz
 import i3ipc
@@ -20,7 +21,7 @@ from xcffibär.sourcePatterns import Color
 from xcffibär.Theme import Theme
 from xcffibär.atoms import initAtoms
 from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo
-from xcffibär.timers import addInterval, triggerElapsedTimers
+from xcffibär.timers import addDelay, addInterval, triggerElapsedTimers
 from xcffibär import Bar, chunks, FSReader, Store, Window, XSetup
 
 
@@ -190,6 +191,8 @@ def setupStore(store, i3conn):
     FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.2)
 
 
+awaitingScreenChange = False
+
 def setupBar(bar, store, outputs, i3conn):
     # Clock
     clock = chunks.Text(store.template('{time.local}'), styles='clock')
@@ -307,11 +310,13 @@ def run():
 
     screens = conn.get_screen_pointers()
 
+    root = conn.get_setup().roots.list[SCREEN_INDEX]
+
     initAtoms(conn)
 
     depthInfo = [
         d
-        for d in conn.get_setup().roots.list[SCREEN_INDEX].allowed_depths.list
+        for d in root.allowed_depths.list
         if d.depth == 32
     ][0]
 
@@ -357,25 +362,41 @@ def run():
 
     i3conn.command = i3Command
 
-    crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
-    for crtc, crtcInfoCookie in crtcInfoCookies:
-        crtcInfo = crtcInfoCookie.reply()
-        if crtcInfo.num_outputs:
-            printInfo(f'Creating bar for crtc {crtc}.')
-            outputs = [
-                conn.randr.GetOutputInfo(output, 0).reply().name.raw.decode('utf8')
-                for output in crtcInfo.outputs
-            ]
-            printInfo('outputs:', outputs)
-            bar = Bar(xSetup, height=21, screenExtents=crtcInfo, name=outputs[0])
-            setupBar(bar, store, outputs, i3conn)
-            bars.append(bar)
-        else:
-            print(f'(crtc {crtc} disabled)')
+    def setupBars():
+        crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
+        for crtc, crtcInfoCookie in crtcInfoCookies:
+            crtcInfo = crtcInfoCookie.reply()
+            if crtcInfo.num_outputs:
+                printInfo(f'Creating bar for crtc {crtc}.')
+                outputs = [
+                    conn.randr.GetOutputInfo(output, 0).reply().name.raw.decode('utf8')
+                    for output in crtcInfo.outputs
+                ]
+                printInfo('outputs:', outputs)
+                bar = Bar(xSetup, height=21, screenExtents=crtcInfo, name=outputs[0])
+                setupBar(bar, store, outputs, i3conn)
+                bars.append(bar)
+            else:
+                print(f'(crtc {crtc} disabled)')
+
+    setupBars()
 
     dummy.close()
 
+    conn.randr.SelectInput(root.root, NotifyMask.ScreenChange)
+
     loop = asyncio.get_event_loop()
+
+    def handleScreenChange():
+        printInfo(f'Incoming screen change event; closing and re-creating bars.')
+        while bars:
+            try:
+                bars.pop().close()
+            except Exception as error:  # pylint: disable=broad-except
+                printError(f'Unexpected {error.__class__.__name__} received while closing bar:', error)
+                inspect(error)
+        setupBars()
+        globals()['awaitingScreenChange'] = False
 
     def shutdown():
         printInfo('Shutting down.')
@@ -405,7 +426,15 @@ def run():
                 break
 
             try:
-                handleWindowEvent(event)
+                if isinstance(event, ScreenChangeNotifyEvent):
+                    if not awaitingScreenChange:
+                        printInfo(f'Incoming {event.__class__.__name__}; scheduling bar re-creation.')
+                        globals()['awaitingScreenChange'] = True
+                        addDelay(1, handleScreenChange)
+                    else:
+                        printInfo(f'Ignoring {event.__class__.__name__}; bar re-creation already scheduled.')
+                else:
+                    handleWindowEvent(event)
             except QuitApplication:
                 shutdown()
                 break

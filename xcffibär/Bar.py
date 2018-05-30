@@ -68,8 +68,15 @@ class Bar(Window):
             ewmh.set_wm_strut_partial_checked(self.id, *strutPartial),
             ewmh.set_wm_window_type_checked(self.id, [atoms['_NET_WM_WINDOW_TYPE_DOCK']]),
             ewmh.set_wm_state_checked(self.id, [atoms['_NET_WM_STATE_STICKY'], atoms['_NET_WM_STATE_ABOVE']]),
-            #FIXME: This fails. Doing it manually below works.
+            #FIXME: This fails. Doing it manually with ChangeProperty works.
             #ewmh.set_wm_name_checked(self.id, 'xcffibär'),
+            self.connection.core.ChangeProperty(
+                PropMode.Replace, self.id,
+                atoms['_NET_WM_NAME'], atoms['UTF8_STRING'], 8,
+                *xStr('xcffibär'),
+                is_checked=True
+            ),
+            self.connection.core.MapWindow(self.id, is_checked=True),
         ]
 
         self.chunks = Chunks([], [])
@@ -77,14 +84,6 @@ class Bar(Window):
 
         self.lastWidth = width
         self.lastHeight = height
-
-        #TODO: Make this request checked.
-        self.connection.core.ChangeProperty(
-            PropMode.Replace, self.id,
-            atoms['_NET_WM_NAME'], atoms['UTF8_STRING'], 8,
-            *xStr('xcffibär')
-        )
-        self.connection.core.MapWindow(self.id)
 
         self.surface = XCBSurface(self.connection, self.id, self.visual, width, height)
 
