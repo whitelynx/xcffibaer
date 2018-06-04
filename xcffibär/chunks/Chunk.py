@@ -5,7 +5,7 @@ from ..utils import Perimeter, printWarning
 
 
 class Chunk(object):
-    def __init__(self, theme=None, styles=None, width=None, height=None):
+    def __init__(self, theme=None, styles=None, width=None, height=None, onClick=None):
         self.context = None
         self.chunkStyle = None
         self.theme = None
@@ -21,6 +21,7 @@ class Chunk(object):
         self._intrinsicInnerHeight = 0
         self._overrideWidth = width
         self._overrideHeight = height
+        self._onClick = onClick
 
         if theme:
             self.setTheme(theme)
@@ -70,7 +71,10 @@ class Chunk(object):
         return self.chunkStyle.padding or Perimeter(0)
 
     def onClick(self, event, clickX, clickY):
-        printWarning(f'{self.__class__.__name__}: Unhandled button {event.detail} click at ({clickX}, {clickY}).')
+        if self._onClick:
+            self._onClick(event, clickX, clickY)
+        else:
+            printWarning(f'{self.__class__.__name__}: Unhandled button {event.detail} click at ({clickX}, {clickY}).')
 
     # Intrinsic inner dimensions
     def updateIntrinsicSize(self):
