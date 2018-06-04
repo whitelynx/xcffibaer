@@ -4,6 +4,7 @@
 '''
 import asyncio
 import os
+import subprocess
 import sys
 from datetime import datetime
 
@@ -92,6 +93,11 @@ theme = Theme({
         # Image styles
         'icon': {
             'padding': Perimeter(2, 1, 3, 1),
+        },
+        'icon-expand': {
+            'image': '/usr/share/icons/Adwaita/16x16/actions/pan-down-symbolic.symbolic.png',
+            'padding': Perimeter(3, 0, 2, 1),
+            'foreground': Color('aaa'),
         },
         'icon-clock': {
             'image': '/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
@@ -187,7 +193,8 @@ def setupStore(store, i3conn):
 
     def tempTransform(value):
         return int(value) / 1000.0
-    FSReader('/sys/class/thermal/thermal_zone3/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.2)
+    #TODO: Iterate over all thermal zones, and look for the ones with type 'pch_skylake' or 'iwlwifi'
+    FSReader('/sys/class/thermal/thermal_zone5/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.2)
     FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.2)
 
 
@@ -259,6 +266,9 @@ def setupBar(bar, store, outputs, i3conn):
         wifiIcon.styles = [*wifiIcon.styles[:-1], 'icon-active' if wifiAddresses else 'icon-inactive']
     store.watch('network.addresses', updateNetworkAddresses)
 
+    def toggleSystray(_event, _clickX, _clickY):
+        subprocess.call(os.path.expanduser('~/bin/toggle-systray'))
+
     # Bar layout
     bar.addLeft(
         i3Workspaces,
@@ -269,6 +279,8 @@ def setupBar(bar, store, outputs, i3conn):
     #bar.addCenter(chunks.Text('xcffibär', styles='title'))
 
     bar.addRight(
+        chunks.Image(styles='icon-expand icon', onClick=toggleSystray),
+
         clock,
         clockAlt,
         #chunks.Image('/usr/share/icons/Moka/16x16/apps/clock.png', styles='icon'),
@@ -288,10 +300,10 @@ def setupBar(bar, store, outputs, i3conn):
 
         cpuHistoryGraph,
 
-        #chunks.Image(styles='icon-temperature icon'),
-        chunks.Text('🌡', styles='icon'),
         temperatureCPU,
         temperatureWiFi,
+        #chunks.Image(styles='icon-temperature icon'),
+        chunks.Text('🌡', styles='icon'),
     )
 
 
