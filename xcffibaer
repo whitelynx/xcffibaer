@@ -414,7 +414,7 @@ def run():
             except Exception as error:  # pylint: disable=broad-except
                 printError(f'Unexpected {error.__class__.__name__} received:', error)
                 inspect(error)
-                shutdown()
+                #shutdown()
                 break
 
             if conn.has_error():
