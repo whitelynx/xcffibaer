@@ -144,9 +144,9 @@ class Bar(Window):
                 chunk.setContext(context)
 
                 width, height = chunk.getSize()
-                chunkExtents[chunk] = (lastX, lastX + width)
 
                 lastX -= width
+                chunkExtents[chunk] = (lastX, lastX + width)
 
                 context.rectangle(lastX, 0, width, height)
                 context.clip()
