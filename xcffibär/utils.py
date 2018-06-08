@@ -59,10 +59,13 @@ def printInfo(message, *args):
 def inspect(obj, attrFilter=publicDataAttrs):
     output = []
     for key in dir(obj):
-        val = getattr(obj, key)
-        if attrFilter(key, val):
-            #print('  %s: %r' % (key, val))
-            output.append('  \x1b[96m%s:\x1b[m %r' % (key, val))
+        try:
+            val = getattr(obj, key)
+            if attrFilter(key, val):
+                #print('  %s: %r' % (key, val))
+                output.append('  \x1b[96m%s:\x1b[m %r' % (key, val))
+        except Exception as error:  # pylint: disable=broad-except
+            output.append('  \x1b[96m%s:\x1b[m \x1b[91m%r\x1b[m' % (key, error))
     print(collist(output) if sys.stdout.isatty() else '\n'.join(output))
     sys.stdout.flush()
 
