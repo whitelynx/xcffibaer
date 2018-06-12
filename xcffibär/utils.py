@@ -1,6 +1,8 @@
 '''Utility functions
 
 '''
+import os
+import subprocess
 import sys
 
 from collist import collist
@@ -68,6 +70,10 @@ def inspect(obj, attrFilter=publicDataAttrs):
             output.append('  \x1b[96m%s:\x1b[m \x1b[91m%r\x1b[m' % (key, error))
     print(collist(output) if sys.stdout.isatty() else '\n'.join(output))
     sys.stdout.flush()
+
+
+def runCommand(path):
+    subprocess.call(os.path.expanduser(path))
 
 
 def topStrut(width, height, left=0):

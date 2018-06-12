@@ -5,7 +5,6 @@
 import asyncio
 import locale
 import os
-import subprocess
 import sys
 from datetime import datetime
 
@@ -22,7 +21,7 @@ import statgrab
 from xcffibär.sourcePatterns import Color
 from xcffibär.Theme import Theme
 from xcffibär.atoms import initAtoms
-from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo
+from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo, runCommand
 from xcffibär.timers import addDelay, addInterval, triggerElapsedTimers
 from xcffibär import Bar, chunks, FSReader, Store, Window, XSetup
 
@@ -206,6 +205,7 @@ def setupStore(store, i3conn):
 
 awaitingScreenChange = False
 
+
 def setupBar(bar, store, outputs, i3conn):
     # Clock
     clock = chunks.Text(store.template('{time.local}'), styles='clock')
@@ -272,9 +272,6 @@ def setupBar(bar, store, outputs, i3conn):
         wifiIcon.styles = [*wifiIcon.styles[:-1], 'icon-active' if wifiAddresses else 'icon-inactive']
     store.watch('network.addresses', updateNetworkAddresses)
 
-    def toggleSystray(_event, _clickX, _clickY):
-        subprocess.call(os.path.expanduser('~/bin/toggle-systray'))
-
     # Bar layout
     bar.addLeft(
         i3Workspaces,
@@ -285,7 +282,7 @@ def setupBar(bar, store, outputs, i3conn):
     #bar.addCenter(chunks.Text('xcffibär', styles='title'))
 
     bar.addRight(
-        chunks.Image(styles='icon-expand icon', onClick=toggleSystray),
+        chunks.Image(styles='icon-expand icon', onClick=lambda *a: runCommand('~/bin/toggle-systray')),
 
         clock,
         clockAlt,
