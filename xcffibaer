@@ -3,6 +3,7 @@
 
 '''
 import asyncio
+import locale
 import os
 import subprocess
 import sys
@@ -150,12 +151,17 @@ theme = Theme({
 
 
 def setupStore(store, i3conn):
-    clockFormat = '%Y-%m-%d %H:%M:%S.%f'
+    defaultLocale = locale.getlocale()
+    clockFormat = '%a %Y-%m-%d %H:%M:%S.%f'
+    altClockFormat = '%a %H:%M'
     altTimezone = gettz('Europe/Berlin')
+    altLocale = 'de_DE'
 
     def updateClock():
         store['time.local'] = datetime.now().strftime(clockFormat)[:-5]
-        store['time.berlin'] = datetime.now(altTimezone).strftime(clockFormat)[:-5]
+        locale.setlocale(locale.LC_ALL, altLocale)
+        store['time.berlin'] = datetime.now(altTimezone).strftime(altClockFormat)
+        locale.setlocale(locale.LC_ALL, defaultLocale)
     addInterval(0.1, updateClock)
 
     def updateCPUStats():
