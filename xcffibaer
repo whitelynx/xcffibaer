@@ -18,12 +18,12 @@ import i3ipc
 import netifaces
 import statgrab
 
-from xcffibär.sourcePatterns import Color
-from xcffibär.Theme import Theme
-from xcffibär.atoms import initAtoms
-from xcffibär.utils import Perimeter, QuitApplication, inspect, printError, printInfo, runCommand
-from xcffibär.timers import addDelay, addInterval, triggerElapsedTimers
-from xcffibär import Bar, chunks, FSReader, Store, Window, XSetup
+from xcffibaer_lib.sourcePatterns import Color
+from xcffibaer_lib.Theme import Theme
+from xcffibaer_lib.atoms import initAtoms
+from xcffibaer_lib.utils import Perimeter, QuitApplication, inspect, printError, printInfo, runCommand
+from xcffibaer_lib.timers import addDelay, addInterval, triggerElapsedTimers
+from xcffibaer_lib import Bar, chunks, FSReader, Store, Window, XSetup
 
 
 TICK_LENGTH = 0.005

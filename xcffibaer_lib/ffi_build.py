@@ -28,7 +28,7 @@ from cairocffi.ffi_build import ffi as cairocffi_ffi
 pango_ffi = FFI()
 # PyPy < 2.6 compatibility
 if hasattr(pango_ffi, 'set_source'):
-    pango_ffi.set_source("xcffibär._ffi_pango", None)
+    pango_ffi.set_source("xcffibaer_lib._ffi_pango", None)
 
 pango_ffi.include(cairocffi_ffi)
 
@@ -151,7 +151,7 @@ pango_ffi.cdef("""
 xcursors_ffi = FFI()
 # PyPy < 2.6 compatibility
 if hasattr(xcursors_ffi, 'set_source'):
-    xcursors_ffi.set_source("xcffibär._ffi_xcursors", None)
+    xcursors_ffi.set_source("xcffibaer_lib._ffi_xcursors", None)
 
 xcursors_ffi.include(xcffib_ffi)
 
