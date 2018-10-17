@@ -41,7 +41,9 @@ class Chunk(object):
         self.applyStyle(theme.getChunkStyle(*self.getStyleNames()))
 
     def getStyleNames(self):
-        return self.styles + [self.__class__.__name__]
+        styleNames = [self.__class__.__name__] + self.styles
+        styleNames.reverse()
+        return styleNames
 
     def applyStyle(self, chunkStyle):
         self.chunkStyle = chunkStyle

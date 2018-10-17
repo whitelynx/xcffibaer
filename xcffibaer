@@ -64,6 +64,10 @@ theme = Theme({
             'foreground': Color('777'),
         },
 
+        'battery': {
+            'foreground': Color('080'),
+        },
+
         'workspace': {
             'foreground': Color('999'),
             'padding': Perimeter(3, 8, 4, 8),
@@ -90,6 +94,13 @@ theme = Theme({
             'padding': Perimeter(0),
         },
 
+        'text-warn': {
+            'foreground': Color('bb0'),
+        },
+        'text-critical': {
+            'foreground': Color('f00'),
+        },
+
         # Image styles
         'icon': {
             'padding': Perimeter(2, 1, 3, 1),
@@ -112,6 +123,11 @@ theme = Theme({
             'image': '/usr/share/icons/Adwaita/16x16/devices/network-wireless-symbolic.symbolic.png',
             'padding': Perimeter(2, 0, 3, 0),
         },
+        'icon-battery': {
+            'image': '/usr/share/icons/Adwaita/16x16/devices/battery-symbolic.symbolic.png',
+            'padding': Perimeter(2, 0, 3, 0),
+            'foreground': Color('080'),
+        },
         'icon-info': {
             'foreground': Color('888'),
         },
@@ -120,6 +136,13 @@ theme = Theme({
         },
         'icon-inactive': {
             'foreground': Color('555'),
+        },
+
+        'icon-warn': {
+            'foreground': Color('bb0'),
+        },
+        'icon-critical': {
+            'foreground': Color('f00'),
         },
 
         # Graph styles
@@ -204,6 +227,10 @@ def setupStore(store, i3conn):
     FSReader('/sys/class/thermal/thermal_zone5/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.2)
     FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.2)
 
+    FSReader('/sys/class/power_supply/BAT0/charge_now', 'battery.charge.now', store, transform=int).updateEvery(0.5)
+    FSReader('/sys/class/power_supply/BAT0/charge_full', 'battery.charge.full', store, transform=int).updateEvery(0.5)
+    FSReader('/sys/class/power_supply/BAT0/charge_full_design', 'battery.charge.full_design', store, transform=int).updateEvery(0.5)
+
 
 awaitingScreenChange = False
 
@@ -229,7 +256,7 @@ def setupBar(bar, store, outputs, i3conn):
 
     # Temperature
     temperatureCPU = chunks.Text('', styles='temperature-cpu temperature')
-    temperatureWiFi = chunks.Text('', styles='temperature-cpu temperature')
+    temperatureWiFi = chunks.Text('', styles='temperature-wifi temperature')
 
     def updateTemperatures():
         temperatureCPU.text = store['temp.cpu.die']
@@ -275,6 +302,22 @@ def setupBar(bar, store, outputs, i3conn):
         wifiIcon.styles = [*wifiIcon.styles[:-1], 'icon-active' if wifiAddresses else 'icon-inactive']
     store.watch('network.addresses', updateNetworkAddresses)
 
+    # Battery
+    battery = chunks.Text('?%', styles='battery text-normal')
+    batteryIcon = chunks.Image(styles='icon-battery icon icon-normal')
+    def updateBattery():
+        if store['battery.charge.now'] and store['battery.charge.full']:
+            batteryPercent = store['battery.charge.now'] / store['battery.charge.full'] * 100
+            battery.text = '{}%'.format(round(batteryPercent, 1))
+            state = 'normal'
+            if batteryPercent <= 10:
+                state = 'critical'
+            elif batteryPercent <= 30:
+                state = 'warn'
+            battery.styles = [*battery.styles[:-1], 'text-' + state]
+            batteryIcon.styles = [*batteryIcon.styles[:-1], 'icon-' + state]
+    store.watch('battery', updateBattery)
+
     # Bar layout
     bar.addLeft(
         i3Workspaces,
@@ -305,6 +348,9 @@ def setupBar(bar, store, outputs, i3conn):
         #chunks.Separator(width=8, height=18),
 
         cpuHistoryGraph,
+
+        battery,
+        batteryIcon,
 
         temperatureCPU,
         temperatureWiFi,
