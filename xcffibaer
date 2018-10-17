@@ -383,8 +383,10 @@ def run():
             crtcInfo = crtcInfoCookie.reply()
             if crtcInfo.num_outputs:
                 printInfo(f'Creating bar for crtc {crtc}.')
+                def toString(list_):
+                    return ''.join(chr(c) for c in list_)
                 outputs = [
-                    conn.randr.GetOutputInfo(output, 0).reply().name.raw.decode('utf8')
+                    toString(conn.randr.GetOutputInfo(output, 0).reply().name)
                     for output in crtcInfo.outputs
                 ]
                 printInfo('outputs:', outputs)
