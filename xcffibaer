@@ -152,15 +152,17 @@ theme = Theme({
 def setupStore(store, i3conn):
     defaultLocale = locale.getlocale()
     clockFormat = '%a %Y-%m-%d %H:%M:%S.%f'
+    altTimezone = gettz('America/Los_Angeles')
     altClockFormat = '%a %H:%M'
-    altTimezone = gettz('Europe/Berlin')
-    altLocale = 'de_DE'
+    #altTimezone = gettz('Europe/Berlin')
+    #altLocale = 'de_DE'
 
     def updateClock():
         store['time.local'] = datetime.now().strftime(clockFormat)[:-5]
-        locale.setlocale(locale.LC_ALL, altLocale)
-        store['time.berlin'] = datetime.now(altTimezone).strftime(altClockFormat)
-        locale.setlocale(locale.LC_ALL, defaultLocale)
+        store['time.sf'] = datetime.now(altTimezone).strftime(altClockFormat)
+        #locale.setlocale(locale.LC_ALL, altLocale)
+        #store['time.berlin'] = datetime.now(altTimezone).strftime(altClockFormat)
+        #locale.setlocale(locale.LC_ALL, defaultLocale)
     addInterval(0.1, updateClock)
 
     def updateCPUStats():
@@ -209,7 +211,8 @@ awaitingScreenChange = False
 def setupBar(bar, store, outputs, i3conn):
     # Clock
     clock = chunks.Text(store.template('{time.local}'), styles='clock')
-    clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock-alt clock')
+    #clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock-alt clock')
+    clockAlt = chunks.Text(store.template('{time.sf} (SF)'), styles='clock-alt clock')
 
     # CPU usage
     cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=100, height=21)
