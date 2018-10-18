@@ -42,6 +42,7 @@ class Chunk(object):
 
     def getStyleNames(self):
         styleNames = [self.__class__.__name__] + self.styles
+        # Without this reverse, earlier styles apparently override later ones, which is unexpected
         styleNames.reverse()
         return styleNames
 

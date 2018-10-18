@@ -37,9 +37,6 @@ class Switcher(Chunk):
             if choice['focused']:
                 chunk.styles.append(f'{self.choiceStylePrefix}-focused')
 
-            #FIXME: earlier styles apparently override later ones, which is unexpected
-            chunk.styles.reverse()
-
             if self.theme is not None:
                 chunk.setTheme(self.theme)
 
