@@ -224,12 +224,12 @@ def setupStore(store, i3conn):
     def tempTransform(value):
         return int(value) / 1000.0
     #TODO: Iterate over all thermal zones, and look for the ones with type 'pch_skylake' or 'iwlwifi'
-    FSReader('/sys/class/thermal/thermal_zone5/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.2)
-    FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.2)
+    FSReader('/sys/class/thermal/thermal_zone5/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.5)
+    FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.5)
 
-    FSReader('/sys/class/power_supply/BAT0/charge_now', 'battery.charge.now', store, transform=int).updateEvery(0.5)
-    FSReader('/sys/class/power_supply/BAT0/charge_full', 'battery.charge.full', store, transform=int).updateEvery(0.5)
-    FSReader('/sys/class/power_supply/BAT0/charge_full_design', 'battery.charge.full_design', store, transform=int).updateEvery(0.5)
+    FSReader('/sys/class/power_supply/BAT0/charge_now', 'battery.charge.now', store, transform=int).updateEvery(1)
+    FSReader('/sys/class/power_supply/BAT0/charge_full', 'battery.charge.full', store, transform=int).updateEvery(1)
+    FSReader('/sys/class/power_supply/BAT0/charge_full_design', 'battery.charge.full_design', store, transform=int).updateEvery(1)
 
 
 awaitingScreenChange = False
