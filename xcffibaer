@@ -328,7 +328,7 @@ def setupBar(bar, store, outputs, i3conn):
     #bar.addCenter(chunks.Text('xcffibär', styles='title'))
 
     bar.addRight(
-        chunks.Image(styles='icon-expand icon', onClick=lambda *a: runCommand('~/bin/toggle-systray')),
+        #chunks.Image(styles='icon-expand icon', onClick=lambda *a: runCommand('~/bin/toggle-systray')),
 
         clock,
         clockAlt,
