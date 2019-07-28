@@ -9,6 +9,7 @@ Setup
 
 ```bash
 ./bootstrap.sh
+venv/bin/python xcffibaer_lib/ffi_build.py
 ```
 
 
@@ -16,5 +17,5 @@ Running
 -------
 
 ```bash
-env/bin/python xcffibaer
+venv/bin/python xcffibaer
 ```
