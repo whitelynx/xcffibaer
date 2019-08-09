@@ -1,9 +1,19 @@
 #!/bin/sh
 
 PROJECT_DIR="$(cd "$(dirname "$0")"; pwd)"
-ENV_DIR="$PROJECT_DIR/venv"
+VENV_NAME="$(cat .python-version)"
+PYTHON_VER="3.7.4"
 
-[ -d "$ENV_DIR" ] || python -m venv "$ENV_DIR"
+cd "$PROJECT_DIR"
 
-"$ENV_DIR/bin/pip" install -r "$PROJECT_DIR/requirements.txt"
-"$ENV_DIR/bin/pip" install cairocffi[xcb] -U --force-reinstall --no-binary cairocffi
+if ! pyenv version; then
+	if ! pyenv versions 2>/dev/null | grep $PYTHON_VER; then
+		pyenv install $PYTHON_VER
+	fi
+	pyenv virtualenv $PYTHON_VER $VENV_NAME
+fi
+
+pyenv exec pip install -r "$PROJECT_DIR/requirements.txt"
+pyenv exec pip install cairocffi[xcb] -U --force-reinstall --no-binary cairocffi
+
+pyenv exec python xcffibaer_lib/ffi_build.py

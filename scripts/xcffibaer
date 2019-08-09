@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Example xcffibaer runner script #
+# Make sure you adjust the paths below to match your installation!
+
+cd $HOME/Development/Personal/xcffibaer
+exec $HOME/.pyenv/bin/pyenv exec python ./xcffibaer
