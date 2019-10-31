@@ -3,10 +3,8 @@
 
 '''
 import asyncio
-import locale
 import os
 import sys
-from datetime import datetime
 
 import xcffib
 import xcffib.render
@@ -20,6 +18,7 @@ import statgrab
 
 from xcffibaer_lib.sourcePatterns import Color
 from xcffibaer_lib.Theme import Theme
+from xcffibaer_lib.Timespec import Timespec
 from xcffibaer_lib.atoms import initAtoms
 from xcffibaer_lib.utils import Perimeter, QuitApplication, inspect, printError, printInfo, runCommand
 from xcffibaer_lib.timers import addDelay, addInterval, triggerElapsedTimers
@@ -173,24 +172,22 @@ theme = Theme({
 
 
 def setupStore(store, i3conn):
-    defaultLocale = locale.getlocale()
-    clockFormat = '%a %Y-%m-%d %H:%M:%S.%f'
-    altTimezone = gettz('America/Los_Angeles')
-    altClockFormat = '%a %H:%M'
-    #altTimezone = gettz('Europe/Berlin')
-    #altLocale = 'de_DE'
+    timespecs = [
+        Timespec('local', '%a %Y-%m-%d %H:%M:%S'),
+        #Timespec('berlin', '%a %H:%M', gettz('Europe/Berlin'), locale='de_DE'),
+        Timespec('berlin', '%a %H:%M', gettz('Europe/Berlin')),
+        #Timespec('sf', '%a %H:%M', gettz('America/Los_Angeles')),
+    ]
 
     def updateClock():
-        store['time.local'] = datetime.now().strftime(clockFormat)[:-5]
-        store['time.sf'] = datetime.now(altTimezone).strftime(altClockFormat)
-        #locale.setlocale(locale.LC_ALL, altLocale)
-        #store['time.berlin'] = datetime.now(altTimezone).strftime(altClockFormat)
-        #locale.setlocale(locale.LC_ALL, defaultLocale)
-    addInterval(0.1, updateClock)
+        for timespec in timespecs:
+            store['time.' + timespec.tag] = timespec.render()
+    #addInterval(0.1, updateClock)
+    addInterval(0.5, updateClock)
 
     def updateCPUStats():
         store['cpu.percents'] = statgrab.sg_get_cpu_percents()
-    addInterval(0.2, updateCPUStats)
+    addInterval(0.5, updateCPUStats)
 
     def onWorkspaceUpdate(_i3conn, event):
         printInfo('onWorkspaceUpdate:')
@@ -238,8 +235,8 @@ awaitingScreenChange = False
 def setupBar(bar, store, outputs, i3conn):
     # Clock
     clock = chunks.Text(store.template('{time.local}'), styles='clock')
-    #clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock clock-alt')
-    clockAlt = chunks.Text(store.template('{time.sf} (SF)'), styles='clock clock-alt')
+    clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock clock-alt')
+    #clockAlt = chunks.Text(store.template('{time.sf} (SF)'), styles='clock clock-alt')
 
     # CPU usage
     cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=100, height=21)
