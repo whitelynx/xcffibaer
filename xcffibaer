@@ -21,7 +21,7 @@ from xcffibaer_lib.Theme import Theme
 from xcffibaer_lib.Timespec import Timespec
 from xcffibaer_lib.atoms import initAtoms
 from xcffibaer_lib.utils import Perimeter, QuitApplication, inspect, printError, printInfo, runCommand
-from xcffibaer_lib.timers import addDelay, addInterval, triggerElapsedTimers
+from xcffibaer_lib.timers import addDelay, addInterval
 from xcffibaer_lib import Bar, chunks, FSReader, Store, Window, XSetup
 
 
@@ -502,21 +502,12 @@ def run():
                 shutdown()
                 break
 
-    #TODO: Rework timers to use `asyncio.ensure_future`
-    # See: https://stackoverflow.com/questions/45419723/python-timer-with-asyncio-coroutine#45430833
-    async def runTimers():
-        while True:
-            await asyncio.sleep(TICK_LENGTH)
-
-            triggerElapsedTimers()
-
     try:
         i3conn.event_socket_setup()
 
         loop.add_reader(conn.get_file_descriptor(), xcbPoll)
         loop.add_reader(i3conn.sub_socket, i3conn.event_socket_poll)
 
-        loop.create_task(runTimers())
         loop.run_forever()
 
     finally:
