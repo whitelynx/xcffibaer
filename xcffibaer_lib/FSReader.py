@@ -5,7 +5,7 @@ from .timers import addInterval
 from .utils import printError
 
 
-class FSReader(object):
+class FSReader:
     def __init__(self, filename, target, store, transform=None):
         self.filename = filename
         self.target = target

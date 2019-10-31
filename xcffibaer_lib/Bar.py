@@ -191,8 +191,8 @@ class Bar(Window):
             print(f'{buttonNames.get(event.detail, f"button {event.detail}")} down')
             if event.detail == 3:
                 raise QuitApplication()
-            else:
-                self.onClick(event)
+
+            self.onClick(event)
 
         else:
             super().handleEvent(event)

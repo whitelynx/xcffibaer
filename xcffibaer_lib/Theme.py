@@ -4,17 +4,17 @@
 from collections import ChainMap, defaultdict
 
 
-class ChunkStyle(object):
+class ChunkStyle:
     def __init__(self, config):
         self._config = config
-        for k, v in config.items():
-            setattr(self, k, v)
+        for key, value in config.items():
+            setattr(self, key, value)
 
     def __getattr__(self, name):
         return None
 
 
-class Theme(object):
+class Theme:
     def __init__(self, config):
         self.config = config
 

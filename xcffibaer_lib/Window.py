@@ -54,7 +54,7 @@ def createWindow(
     return windowID
 
 
-class Window(object):
+class Window:
     windowsByID = {}
 
     def __init__(self, xSetup, x=0, y=0, width=1, height=1, borderWidth=0, attributes=None, parentID=None):

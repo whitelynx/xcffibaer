@@ -15,7 +15,7 @@ class StoreFormatter(Formatter):
 storeFormatter = StoreFormatter()
 
 
-class TemplateString(object):
+class TemplateString:
     def __init__(self, store, template):
         self.store = store
         self.template = template
@@ -27,7 +27,7 @@ class TemplateString(object):
         return str(self)
 
 
-class Ref(object):
+class Ref:
     def __init__(self, store, keyExpr):
         self.store = store
         self.keyExpr = keyExpr
@@ -39,7 +39,7 @@ class Ref(object):
         self.store.watch(self.keyExpr, callback)
 
 
-class Store(object):
+class Store:
     '''A data store.
 
     '''

@@ -19,6 +19,7 @@ from .utils import QuitApplication, inspect, printError, printInfo
 
 
 DEFAULT_SCREEN_INDEX = 0
+HANDLE_SCREEN_CHANGE_DELAY = 0.5
 
 awaitingScreenChange = False
 
@@ -31,18 +32,18 @@ def handleWindowEvent(event):
     Window.windowsByID[windowID].handleEvent(event)
 
 
-def charListToString(list_):
-    return ''.join(chr(c) for c in list_)
+def charListToString(charList):
+    return ''.join(chr(c) for c in charList)
 
 
-def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_INDEX):
+def setupX(theme, screenIndex=DEFAULT_SCREEN_INDEX):
     conn = xcffib.connect(display=os.getenv('DISPLAY'))
     conn.randr = conn(xcffib.randr.key)
     conn.render = conn(xcffib.render.key)
 
     screens = conn.get_screen_pointers()
 
-    root = conn.get_setup().roots.list[screen_index]
+    root = conn.get_setup().roots.list[screenIndex]
 
     initAtoms(conn)
 
@@ -64,18 +65,31 @@ def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_IN
     printInfo('visualType:')
     inspect(visualType)
 
-    xSetup = XSetup(conn, screens[screen_index], depthInfo, visualType, theme)
+    xSetup = XSetup(conn, screens[screenIndex], depthInfo, visualType, root, theme)
 
-    dummy = Window(xSetup)
+    return conn, xSetup
 
-    printInfo('GetScreenResources:')
-    screenResources = conn.randr.GetScreenResources(dummy.id).reply()
-    inspect(screenResources)
+
+def wrapI3Command(i3conn):
+    wrappedI3Command = i3conn.command
+
+    def i3Command(command):
+        print(f'Sending i3 command: {repr(command)}')
+        sys.stdout.flush()
+        wrappedI3Command(command)
+
+    i3conn.command = i3Command
+
+    return i3conn
+
+
+def run(theme, setupBar, setupStore, onInit=None, screenIndex=DEFAULT_SCREEN_INDEX):
+    conn, xSetup = setupX(theme, screenIndex)
 
     if onInit:
         onInit()
 
-    i3conn = i3ipc.Connection()
+    i3conn = wrapI3Command(i3ipc.Connection())
 
     bars = []
 
@@ -86,16 +100,14 @@ def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_IN
     store = Store(paintBars)
     setupStore(store, i3conn)
 
-    wrappedI3Command = i3conn.command
-
-    def i3Command(command):
-        print(f'Sending i3 command: {repr(command)}')
-        sys.stdout.flush()
-        wrappedI3Command(command)
-
-    i3conn.command = i3Command
-
     def setupBars():
+        dummy = Window(xSetup)
+
+        screenResources = conn.randr.GetScreenResources(dummy.id).reply()
+
+        printInfo('GetScreenResources:')
+        inspect(screenResources)
+
         crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
         for crtc, crtcInfoCookie in crtcInfoCookies:
             crtcInfo = crtcInfoCookie.reply()
@@ -113,11 +125,11 @@ def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_IN
             else:
                 print(f'(crtc {crtc} disabled)')
 
+        dummy.close()
+
     setupBars()
 
-    dummy.close()
-
-    conn.randr.SelectInput(root.root, NotifyMask.ScreenChange)
+    conn.randr.SelectInput(xSetup.root.root, NotifyMask.ScreenChange)
 
     loop = asyncio.get_event_loop()
 
@@ -156,7 +168,7 @@ def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_IN
                 shutdown()
                 break
 
-            elif not event:
+            if not event:
                 break
 
             try:
@@ -164,7 +176,7 @@ def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_IN
                     if not awaitingScreenChange:
                         printInfo(f'Incoming {event.__class__.__name__}; scheduling bar re-creation.')
                         globals()['awaitingScreenChange'] = True
-                        addDelay(1, handleScreenChange)
+                        addDelay(HANDLE_SCREEN_CHANGE_DELAY, handleScreenChange)
                     else:
                         printInfo(f'Ignoring {event.__class__.__name__}; bar re-creation already scheduled.')
                 else:
@@ -191,4 +203,4 @@ def run(theme, setupBar, setupStore, onInit=None, screen_index=DEFAULT_SCREEN_IN
             if hasattr(window, 'cleanUp') and callable(window.cleanUp):
                 window.cleanUp()
 
-    conn.disconnect()
+        conn.disconnect()

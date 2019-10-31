@@ -11,15 +11,15 @@ def parseColorString(colorString):
     match = longHexColorRE.match(colorString)
     if match:
         return tuple(int(c, 16) / 255.0 for c in match.groups() if c is not None)
-    else:
-        match = shortHexColorRE.match(colorString)
-        if match:
-            return tuple(int(c, 16) / 15.0 for c in match.groups() if c is not None)
-        else:
-            raise ValueError("Couldn't parse hex color string!")
+
+    match = shortHexColorRE.match(colorString)
+    if match:
+        return tuple(int(c, 16) / 15.0 for c in match.groups() if c is not None)
+
+    raise ValueError("Couldn't parse hex color string!")
 
 
-class Color(object):
+class Color:
     def __init__(self, *someColor):
         if len(someColor) == 1:
             someColor = someColor[0]
@@ -27,23 +27,22 @@ class Color(object):
         if isinstance(someColor, str):
             someColor = parseColorString(someColor)
 
-        if isinstance(someColor, tuple):
-            if len(someColor) == 3:
-                self.hasAlpha = False
-            elif len(someColor) == 4:
-                self.hasAlpha = True
-            else:
-                raise ValueError('Tuple colors must have either 3 or 4 components!')
-
-            if all(isinstance(c, float) for c in someColor):
-                self.components = someColor
-            elif all(isinstance(c, int) for c in someColor):
-                self.components = tuple(c / 255.0 for c in someColor)
-            else:
-                raise ValueError('Tuple colors must be either all floats or all ints!')
-
-        else:
+        if not isinstance(someColor, tuple):
             raise ValueError('Unrecognized color input! Should be a tuple or a hex string.')
+
+        if len(someColor) == 3:
+            self.hasAlpha = False
+        elif len(someColor) == 4:
+            self.hasAlpha = True
+        else:
+            raise ValueError('Tuple colors must have either 3 or 4 components!')
+
+        if all(isinstance(c, float) for c in someColor):
+            self.components = someColor
+        elif all(isinstance(c, int) for c in someColor):
+            self.components = tuple(c / 255.0 for c in someColor)
+        else:
+            raise ValueError('Tuple colors must be either all floats or all ints!')
 
     def __call__(self, context):
         if self.hasAlpha:

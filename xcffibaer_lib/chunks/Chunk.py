@@ -4,7 +4,7 @@
 from ..utils import Perimeter, printWarning
 
 
-class Chunk(object):
+class Chunk:
     def __init__(self, theme=None, styles=None, width=None, height=None, onClick=None):
         self.context = None
         self.chunkStyle = None

@@ -341,4 +341,4 @@ def setupBar(bar, store, outputs, i3conn):
     )
 
 
-run(theme, setupBar, setupStore, onInit=lambda: statgrab.sg_init())
+run(theme, setupBar, setupStore, onInit=statgrab.sg_init)

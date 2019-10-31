@@ -20,9 +20,9 @@ def xStr(string):
 def Perimeter(*args):  # pylint: disable=invalid-name
     if len(args) == 1:
         return (args[0], args[0], args[0], args[0])
-    elif len(args) == 2:
+    if len(args) == 2:
         return (args[0], args[1], args[0], args[1])
-    elif len(args) == 3:
+    if len(args) == 3:
         return (args[0], args[1], args[2], args[1])
     return (args[0], args[1], args[2], args[3])
 
