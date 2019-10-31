@@ -42,6 +42,7 @@ class Text(Chunk):
 
         self._text = None
         self._formattedText = None
+        self._needsIntrinsicSizeUpdate = True
         self.layout = None
 
         self.textFormat = '%s'
@@ -60,6 +61,7 @@ class Text(Chunk):
     def text(self, value):
         self._text = value
         self._formattedText = self.textFormat % (self.text, )
+        self._needsIntrinsicSizeUpdate = True
 
     def applyStyle(self, chunkStyle):
         '''
@@ -134,7 +136,6 @@ class Text(Chunk):
         if usePangoCairo:
             context = CairoContext(context)
 
-        if usePangoCairo:
             self.layout = context.create_layout()
             self.layout.set_markup(self.textFormat % (self.text, ))
             #print('printing text: \x1b[32m%r\x1b[m' % (self.textFormat % (self.text, ), ))
@@ -148,6 +149,10 @@ class Text(Chunk):
         super().setContext(context)
 
     def updateIntrinsicSize(self):
+        if not self._needsIntrinsicSizeUpdate:
+            return
+
+        self._needsIntrinsicSizeUpdate = False
         if usePangoCairo:
             width, height = self.layout.get_pixel_size()
         else:
