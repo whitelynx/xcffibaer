@@ -22,9 +22,13 @@ class Chunk(object):
         self._overrideWidth = width
         self._overrideHeight = height
         self._onClick = onClick
+        self.padding = Perimeter(0)
 
         if theme:
             self.setTheme(theme)
+
+        self._updateInnerWidth()
+        self._updateInnerHeight()
 
     @property
     def styles(self):
@@ -48,6 +52,9 @@ class Chunk(object):
 
     def applyStyle(self, chunkStyle):
         self.chunkStyle = chunkStyle
+        self.padding = self.chunkStyle.padding or Perimeter(0)
+        self._updateInnerWidth()
+        self._updateInnerHeight()
 
     def setContext(self, context):
         self.context = context
@@ -69,10 +76,6 @@ class Chunk(object):
     def paint(self):
         pass
 
-    @property
-    def padding(self):
-        return self.chunkStyle.padding or Perimeter(0)
-
     def onClick(self, event, clickX, clickY):
         if self._onClick:
             self._onClick(event, clickX, clickY)
@@ -90,6 +93,7 @@ class Chunk(object):
     @intrinsicInnerWidth.setter
     def intrinsicInnerWidth(self, value):
         self._intrinsicInnerWidth = value
+        self._updateInnerWidth()
 
     @property
     def intrinsicInnerHeight(self):
@@ -98,6 +102,7 @@ class Chunk(object):
     @intrinsicInnerHeight.setter
     def intrinsicInnerHeight(self, value):
         self._intrinsicInnerHeight = value
+        self._updateInnerHeight()
 
     # Override dimensions
     @property
@@ -107,6 +112,7 @@ class Chunk(object):
     @overrideWidth.setter
     def overrideWidth(self, value):
         self._overrideWidth = value
+        self._updateInnerWidth()
 
     @property
     def overrideHeight(self):
@@ -115,21 +121,22 @@ class Chunk(object):
     @overrideHeight.setter
     def overrideHeight(self, value):
         self._overrideHeight = value
+        self._updateInnerHeight()
 
     # Calculated inner dimensions
-    @property
-    def innerHeight(self):
+    def _updateInnerHeight(self):
         if self._overrideHeight is not None:
             padding = self.padding
-            return self._overrideHeight - padding[0] - padding[2]
-        return self._intrinsicInnerHeight
+            self.innerHeight = self._overrideHeight - padding[0] - padding[2]
+        else:
+            self.innerHeight = self._intrinsicInnerHeight
 
-    @property
-    def innerWidth(self):
+    def _updateInnerWidth(self):
         if self._overrideWidth is not None:
             padding = self.padding
-            return self._overrideWidth - padding[3] - padding[1]
-        return self._intrinsicInnerWidth
+            self.innerWidth = self._overrideWidth - padding[3] - padding[1]
+        else:
+            self.innerWidth = self._intrinsicInnerWidth
 
     # Calculated outer dimensions
     @property
