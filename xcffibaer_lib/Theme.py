@@ -6,17 +6,19 @@ from collections import ChainMap, defaultdict
 
 class ChunkStyle(object):
     def __init__(self, config):
-        self.config = config
+        self._config = config
+        for k, v in config.items():
+            setattr(self, k, v)
 
     def __getattr__(self, name):
-        return self.config[name]
+        return None
 
 
 class Theme(object):
     def __init__(self, config):
         self.config = config
 
-        self.defaultChunkStyle = defaultdict(lambda: None, config.get('defaultChunkStyle', {}))
+        self.defaultChunkStyle = config.get('defaultChunkStyle', {})
 
         self.chunkStyles = defaultdict(lambda: {}, config.get('chunkStyles', {}))
 
