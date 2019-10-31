@@ -56,7 +56,7 @@ except ImportError:
     if cffi.__version_info__[0] == 0:
         from xcffibaer_lib.ffi_build import pango_ffi as ffi
     else:
-        raise ImportError("No module named xcffibaer_lib._ffi_pango, be sure to run `python ./xcffibaer_lib/ffi_build.py`")
+        raise ImportError("No module named xcffibaer_lib._ffi_pango; run `python ./xcffibaer_lib/ffi_build.py`")
 
 gobject = ffi.dlopen('libgobject-2.0.so.0')
 pango = ffi.dlopen('libpango-1.0.so.0')

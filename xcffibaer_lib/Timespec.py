@@ -25,4 +25,3 @@ class Timespec:
             locale.setlocale(locale.LC_ALL, DEFAULT_LOCALE)
 
         return result
-

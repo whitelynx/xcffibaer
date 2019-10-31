@@ -2,31 +2,17 @@
 '''A themeable status bar written in Python, using xcffib.
 
 '''
-import asyncio
-import os
-import sys
-
-import xcffib
-import xcffib.render
-import xcffib.randr
-from xcffib.randr import NotifyMask, ScreenChangeNotifyEvent
-
 from dateutil.tz import gettz
-import i3ipc
 import netifaces
 import statgrab
 
+from xcffibaer_lib import chunks, FSReader
+from xcffibaer_lib.main import run
 from xcffibaer_lib.sourcePatterns import Color
 from xcffibaer_lib.Theme import Theme
+from xcffibaer_lib.timers import addInterval
 from xcffibaer_lib.Timespec import Timespec
-from xcffibaer_lib.atoms import initAtoms
-from xcffibaer_lib.utils import Perimeter, QuitApplication, inspect, printError, printInfo, runCommand
-from xcffibaer_lib.timers import addDelay, addInterval
-from xcffibaer_lib import Bar, chunks, FSReader, Store, Window, XSetup
-
-
-TICK_LENGTH = 0.005
-SCREEN_INDEX = 0
+from xcffibaer_lib.utils import Perimeter, inspect, printInfo
 
 
 theme = Theme({
@@ -226,10 +212,8 @@ def setupStore(store, i3conn):
 
     FSReader('/sys/class/power_supply/BAT0/charge_now', 'battery.charge.now', store, transform=int).updateEvery(1)
     FSReader('/sys/class/power_supply/BAT0/charge_full', 'battery.charge.full', store, transform=int).updateEvery(1)
-    FSReader('/sys/class/power_supply/BAT0/charge_full_design', 'battery.charge.full_design', store, transform=int).updateEvery(1)
-
-
-awaitingScreenChange = False
+    FSReader('/sys/class/power_supply/BAT0/charge_full_design', 'battery.charge.full_design', store, transform=int) \
+        .updateEvery(1)
 
 
 def setupBar(bar, store, outputs, i3conn):
@@ -302,6 +286,7 @@ def setupBar(bar, store, outputs, i3conn):
     # Battery
     battery = chunks.Text('?%', styles='battery text-normal')
     batteryIcon = chunks.Image(styles='icon-battery icon icon-normal')
+
     def updateBattery():
         if store['battery.charge.now'] and store['battery.charge.full']:
             batteryPercent = store['battery.charge.now'] / store['battery.charge.full'] * 100
@@ -356,171 +341,4 @@ def setupBar(bar, store, outputs, i3conn):
     )
 
 
-def handleWindowEvent(event):
-    printInfo(f'Incoming {event.__class__.__name__}:')
-    inspect(event)
-
-    windowID = event.window if hasattr(event, 'window') else event.event
-    Window.windowsByID[windowID].handleEvent(event)
-
-
-def run():
-    conn = xcffib.connect(display=os.getenv('DISPLAY'))
-    conn.randr = conn(xcffib.randr.key)
-    conn.render = conn(xcffib.render.key)
-
-    screens = conn.get_screen_pointers()
-
-    root = conn.get_setup().roots.list[SCREEN_INDEX]
-
-    initAtoms(conn)
-
-    depthInfo = [
-        d
-        for d in root.allowed_depths.list
-        if d.depth == 32
-    ][0]
-
-    printInfo('depthInfo:')
-    inspect(depthInfo)
-
-    visualType = [
-        v
-        for v in depthInfo.visuals.list
-        if v._class == xcffib.xproto.VisualClass.TrueColor  # pylint: disable=protected-access
-    ][0]
-
-    printInfo('visualType:')
-    inspect(visualType)
-
-    xSetup = XSetup(conn, screens[SCREEN_INDEX], depthInfo, visualType, theme)
-
-    dummy = Window(xSetup)
-
-    printInfo('GetScreenResources:')
-    screenResources = conn.randr.GetScreenResources(dummy.id).reply()
-    inspect(screenResources)
-
-    statgrab.sg_init()
-
-    i3conn = i3ipc.Connection()
-
-    bars = []
-
-    def paintBars():
-        for bar in bars:
-            bar.paint()
-
-    store = Store(paintBars)
-    setupStore(store, i3conn)
-
-    wrappedI3Command = i3conn.command
-
-    def i3Command(command):
-        print(f'Sending i3 command: {repr(command)}')
-        sys.stdout.flush()
-        wrappedI3Command(command)
-
-    i3conn.command = i3Command
-
-    def setupBars():
-        crtcInfoCookies = [(crtc, conn.randr.GetCrtcInfo(crtc, 0)) for crtc in screenResources.crtcs]
-        for crtc, crtcInfoCookie in crtcInfoCookies:
-            crtcInfo = crtcInfoCookie.reply()
-            if crtcInfo.num_outputs:
-                printInfo(f'Creating bar for crtc {crtc}.')
-                def toString(list_):
-                    return ''.join(chr(c) for c in list_)
-                outputs = [
-                    toString(conn.randr.GetOutputInfo(output, 0).reply().name)
-                    for output in crtcInfo.outputs
-                ]
-                printInfo('outputs:', outputs)
-                bar = Bar(xSetup, height=21, screenExtents=crtcInfo, name=outputs[0])
-                setupBar(bar, store, outputs, i3conn)
-                bars.append(bar)
-            else:
-                print(f'(crtc {crtc} disabled)')
-
-    setupBars()
-
-    dummy.close()
-
-    conn.randr.SelectInput(root.root, NotifyMask.ScreenChange)
-
-    loop = asyncio.get_event_loop()
-
-    def handleScreenChange():
-        printInfo(f'Incoming screen change event; closing and re-creating bars.')
-        while bars:
-            try:
-                bars.pop().close()
-            except Exception as error:  # pylint: disable=broad-except
-                printError(f'Unexpected {error.__class__.__name__} received while closing bar:', error)
-                inspect(error)
-        setupBars()
-        globals()['awaitingScreenChange'] = False
-
-    def shutdown():
-        printInfo('Shutting down.')
-        loop.stop()
-
-    def xcbPoll():
-        while True:
-            try:
-                #event = conn.wait_for_event()
-                event = conn.poll_for_event()
-            except xcffib.ProtocolException as error:
-                printError(f'Protocol error {error.__class__.__name__} received!')
-                shutdown()
-                break
-            except Exception as error:  # pylint: disable=broad-except
-                printError(f'Unexpected {error.__class__.__name__} received:', error)
-                inspect(error)
-                #shutdown()
-                break
-
-            if conn.has_error():
-                printError('Connection error received!')
-                shutdown()
-                break
-
-            elif not event:
-                break
-
-            try:
-                if isinstance(event, ScreenChangeNotifyEvent):
-                    if not awaitingScreenChange:
-                        printInfo(f'Incoming {event.__class__.__name__}; scheduling bar re-creation.')
-                        globals()['awaitingScreenChange'] = True
-                        addDelay(1, handleScreenChange)
-                    else:
-                        printInfo(f'Ignoring {event.__class__.__name__}; bar re-creation already scheduled.')
-                else:
-                    handleWindowEvent(event)
-            except QuitApplication:
-                shutdown()
-                break
-
-    try:
-        i3conn.event_socket_setup()
-
-        loop.add_reader(conn.get_file_descriptor(), xcbPoll)
-        loop.add_reader(i3conn.sub_socket, i3conn.event_socket_poll)
-
-        loop.run_forever()
-
-    finally:
-        i3conn.event_socket_teardown()
-
-        loop.run_until_complete(loop.shutdown_asyncgens())
-        loop.close()
-
-        for window in Window.windowsByID.values():
-            if hasattr(window, 'cleanUp') and callable(window.cleanUp):
-                window.cleanUp()
-
-    conn.disconnect()
-
-
-run()
+run(theme, setupBar, setupStore, onInit=lambda: statgrab.sg_init())
