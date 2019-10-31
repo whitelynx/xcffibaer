@@ -65,7 +65,12 @@ class HistoryGraph(Chunk):
 
     def paintSection(self, ctx, lastPos, idx, value):
         barSize = round(self.innerHeight * value / self.maxValue)
+        if barSize == 0:
+            # Bar is too small to display; skip.
+            return lastPos
+
         ctx.rectangle(0, lastPos, 1, barSize)
         foreground = self.chunkStyle.foregrounds[idx] if self.chunkStyle.foregrounds else self.chunkStyle.foreground
         foreground.fill(ctx)
+
         return lastPos + barSize
