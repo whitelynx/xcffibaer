@@ -22,14 +22,15 @@ theme = Theme({
     'defaultChunkStyle': {
         'foreground': Color('fff'),
         'background': Color('0000'),
+        'fontSize': '11px',
         #'fontFamily': 'monospace',
+        #'fontFamily': 'Input Mono',
         'fontFamily': 'Input Mono Narrow',
-        'fontStretch': 'condensed',
+        #'fontStretch': 'condensed',
     },
     'chunkStyles': {
         # Text styles
         'Text': {
-            'fontSize': '11px',
             'padding': Perimeter(3, 12, 4, 4),
         },
         'title': {
@@ -38,7 +39,6 @@ theme = Theme({
             'padding': Perimeter(6, 4, 4),
         },
         'net-address': {
-            'fontSize': '11px',
         },
         'clock': {
             'foreground': Color('bbb'),
