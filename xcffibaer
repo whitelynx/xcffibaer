@@ -15,6 +15,8 @@ from xcffibaer_lib.Timespec import Timespec
 from xcffibaer_lib.utils import Perimeter, inspect, printInfo
 
 
+batteryDevice = 'BAT1'
+
 theme = Theme({
     'foreground': Color('8f8'),
     #'background': Color('222'),
@@ -210,10 +212,12 @@ def setupStore(store, i3conn):
     FSReader('/sys/class/thermal/thermal_zone5/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.5)
     FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.5)
 
-    FSReader('/sys/class/power_supply/BAT0/charge_now', 'battery.charge.now', store, transform=int).updateEvery(1)
-    FSReader('/sys/class/power_supply/BAT0/charge_full', 'battery.charge.full', store, transform=int).updateEvery(1)
-    FSReader('/sys/class/power_supply/BAT0/charge_full_design', 'battery.charge.full_design', store, transform=int) \
-        .updateEvery(1)
+    if batteryDevice:
+        batterySysfsPath = f'/sys/class/power_supply/{batteryDevice}'
+        FSReader(f'{batterySysfsPath}/charge_now', 'battery.charge.now', store, transform=int).updateEvery(1)
+        FSReader(f'{batterySysfsPath}/charge_full', 'battery.charge.full', store, transform=int).updateEvery(1)
+        FSReader(f'{batterySysfsPath}/charge_full_design', 'battery.charge.full_design', store, transform=int) \
+            .updateEvery(1)
 
 
 def setupBar(bar, store, outputs, i3conn):
