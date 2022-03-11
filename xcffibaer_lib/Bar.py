@@ -14,7 +14,7 @@ import xpybutil.icccm as icccm
 
 from .Window import Window
 from .atoms import atoms
-from .utils import xStr, QuitApplication, topStrut, bottomStrut
+from .utils import xStr, QuitApplication, topStrut, bottomStrut, MouseButton
 
 
 Chunks = namedtuple('Chunks', 'left right')
@@ -189,7 +189,7 @@ class Bar(Window):
 
         elif isinstance(event, ButtonPressEvent):
             print(f'{buttonNames.get(event.detail, f"button {event.detail}")} down')
-            if event.detail == 3:
+            if event.detail == MouseButton.middle:
                 raise QuitApplication()
 
             self.onClick(event)

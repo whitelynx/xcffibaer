@@ -12,7 +12,7 @@ from xcffibaer_lib.sourcePatterns import Color
 from xcffibaer_lib.Theme import Theme
 from xcffibaer_lib.timers import addInterval
 from xcffibaer_lib.Timespec import Timespec
-from xcffibaer_lib.utils import Perimeter, inspect, printInfo
+from xcffibaer_lib.utils import MouseButton, Perimeter, inspect, printInfo
 
 
 batteryDevice = 'BAT1'
@@ -251,8 +251,10 @@ def setupBar(bar, store, outputs, i3conn):
     store.watch('temp', updateTemperatures)
 
     # i3 workspaces
-    def onWorkspaceClick(workspace):
-        i3conn.command(f'workspace {workspace.name}')
+    def onWorkspaceClick(event, workspace):
+        if event.detail == MouseButton.left:
+            i3conn.command(f'workspace {workspace.name}')
+
     i3Workspaces = chunks.Switcher(
         choices=[workspace for workspace in i3conn.get_workspaces() if workspace['output'] in outputs],
         choiceStylePrefix='workspace',

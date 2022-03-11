@@ -75,5 +75,5 @@ class Switcher(Chunk):
     def onClick(self, event, clickX, clickY):
         for chunk, (startX, endX) in self.chunkExtents.items():
             if startX <= event.event_x < endX:
-                self.onChoiceClick(chunk.choice)
+                self.onChoiceClick(event, chunk.choice)
                 return

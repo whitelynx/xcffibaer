@@ -12,6 +12,14 @@ class QuitApplication(Exception):
     pass
 
 
+class MouseButton:
+    left = 1
+    middle = 2
+    right = 3
+    scroll_up = 4
+    scroll_down = 5
+
+
 def xStr(string):
     encoded = string.encode('utf8')
     return len(encoded), encoded
