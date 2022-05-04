@@ -310,8 +310,8 @@ def setupBar(bar, store, outputs, i3conn):
 
     # Bar layout
     bar.addLeft(
-        i3Workspaces,
         i3Mode,
+        i3Workspaces,
         chunks.Text('xcffibär', styles='title'),
     )
 
