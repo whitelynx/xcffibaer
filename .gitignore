@@ -1,1 +1,3 @@
 env
+__pycache__
+xcffibaer_lib/_ffi_*.py
