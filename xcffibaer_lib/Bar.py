@@ -24,15 +24,6 @@ paintFinishMethod = None
 #paintFinishMethod = 'show_page'
 #paintFinishMethod = 'copy_page'
 
-buttonNames = {
-    1: 'left button',
-    2: 'middle button',
-    3: 'right button',
-    4: 'wheel up',
-    5: 'wheel down',
-    8: 'back button',
-}
-
 
 class Bar(Window):
     def __init__(self, xSetup, height=16, bottom=False, screenExtents=None, name=''):
@@ -188,7 +179,7 @@ class Bar(Window):
             print('Leave (%d, %d)' % (event.event_x, event.event_y))
 
         elif isinstance(event, ButtonPressEvent):
-            print(f'{buttonNames.get(event.detail, f"button {event.detail}")} down')
+            print(f'{MouseButton.names.get(event.detail, f"button {event.detail}")} down')
             if event.detail == MouseButton.middle:
                 raise QuitApplication()
 
