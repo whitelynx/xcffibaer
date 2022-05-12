@@ -50,6 +50,10 @@ theme = Theme({
         'clock-alt': {
             'foreground': Color('777'),
         },
+        'clock-utc': {
+            'foreground': Color('448'),
+            'fontWeight': 'bold',
+        },
 
         'battery': {
             'foreground': Color('080'),
@@ -166,6 +170,7 @@ def setupStore(store, i3conn):
         #Timespec('berlin', '%a %H:%M', gettz('Europe/Berlin')),
         Timespec('boston', '%a %H:%M', gettz('America/New_York')),
         #Timespec('sf', '%a %H:%M', gettz('America/Los_Angeles')),
+        Timespec('utc', '%a %H:%M', gettz('UTC')),
     ]
 
     def updateClock():
@@ -227,6 +232,7 @@ def setupBar(bar, store, outputs, i3conn):
     #clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock clock-alt')
     clockAlt = chunks.Text(store.template('{time.boston} (Boston)'), styles='clock clock-alt')
     #clockAlt = chunks.Text(store.template('{time.sf} (SF)'), styles='clock clock-alt')
+    clockUTC = chunks.Text(store.template('{time.utc}Z'), styles='clock clock-utc')
 
     # CPU usage
     cpuHistoryGraph = chunks.HistoryGraph(maxValue=100, width=100, height=21)
@@ -322,6 +328,7 @@ def setupBar(bar, store, outputs, i3conn):
 
         clock,
         clockAlt,
+        clockUTC,
         #chunks.Image('/usr/share/icons/Moka/16x16/apps/clock.png', styles='icon'),
         chunks.Image(styles='icon-clock icon'),
 
