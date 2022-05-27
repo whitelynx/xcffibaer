@@ -3,7 +3,9 @@
 
 '''
 from dateutil.tz import gettz
+from glob import glob
 import netifaces
+import re
 import statgrab
 
 from xcffibaer_lib import chunks, FSReader
@@ -14,8 +16,6 @@ from xcffibaer_lib.timers import addInterval
 from xcffibaer_lib.Timespec import Timespec
 from xcffibaer_lib.utils import MouseButton, Perimeter, inspect, printInfo
 
-
-batteryDevice = 'BAT1'
 
 theme = Theme({
     'foreground': Color('8f8'),
@@ -213,16 +213,26 @@ def setupStore(store, i3conn):
 
     def tempTransform(value):
         return int(value) / 1000.0
-    #TODO: Iterate over all thermal zones, and look for the ones with type 'pch_*' or 'iwlwifi*'
-    FSReader('/sys/class/thermal/thermal_zone1/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.5)
-    FSReader('/sys/class/thermal/thermal_zone2/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.5)
 
-    if batteryDevice:
-        batterySysfsPath = f'/sys/class/power_supply/{batteryDevice}'
+    cpuDieTempFound, wifiTempFound = False, False
+    for filename in glob('/sys/class/thermal/thermal_zone*/type'):
+        with open(filename) as file:
+            tztype = file.read()
+            if re.match(r'^pch_.*', tztype) and not cpuDieTempFound:
+                cpuDieTempFound = True
+                FSReader('/sys/class/thermal/thermal_zone1/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.5)
+            elif re.match(r'^iwlwifi.*', tztype) and not wifiTempFound:
+                wifiTempFound = True
+                FSReader('/sys/class/thermal/thermal_zone2/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.5)
+        if cpuDieTempFound and wifiTempFound:
+            break  # CPU die temp and WiFi temp have both been found; stop processing.
+
+    for batterySysfsPath in glob('/sys/class/power_supply/BAT*'):
         FSReader(f'{batterySysfsPath}/charge_now', 'battery.charge.now', store, transform=int).updateEvery(1)
         FSReader(f'{batterySysfsPath}/charge_full', 'battery.charge.full', store, transform=int).updateEvery(1)
         FSReader(f'{batterySysfsPath}/charge_full_design', 'battery.charge.full_design', store, transform=int) \
             .updateEvery(1)
+        break  # Battery has been found; stop processing.
 
 
 def setupBar(bar, store, outputs, i3conn):
