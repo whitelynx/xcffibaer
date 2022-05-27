@@ -169,7 +169,6 @@ def setupStore(store, i3conn):
         #Timespec('berlin', '%a %H:%M', gettz('Europe/Berlin'), locale='de_DE'),
         #Timespec('berlin', '%a %H:%M', gettz('Europe/Berlin')),
         Timespec('boston', '%a %H:%M', gettz('America/New_York')),
-        #Timespec('sf', '%a %H:%M', gettz('America/Los_Angeles')),
         Timespec('utc', '%a %H:%M', gettz('UTC')),
     ]
 
@@ -229,9 +228,8 @@ def setupStore(store, i3conn):
 def setupBar(bar, store, outputs, i3conn):
     # Clock
     clock = chunks.Text(store.template('{time.local}'), styles='clock')
-    #clockAlt = chunks.Text(store.template('{time.berlin} (Berlin)'), styles='clock clock-alt')
-    clockAlt = chunks.Text(store.template('{time.boston} (Boston)'), styles='clock clock-alt')
-    #clockAlt = chunks.Text(store.template('{time.sf} (SF)'), styles='clock clock-alt')
+    #clockAlt = chunks.Text(store.template('{time.berlin} (BER)'), styles='clock clock-alt')
+    clockAlt = chunks.Text(store.template('{time.boston} (BOS)'), styles='clock clock-alt')
     clockUTC = chunks.Text(store.template('{time.utc}Z'), styles='clock clock-utc')
 
     # CPU usage
