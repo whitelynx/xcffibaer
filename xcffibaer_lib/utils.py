@@ -8,6 +8,13 @@ import sys
 from collist import collist
 
 
+def toBool(input_string):
+    return input_string.upper() in ('T', 'TRUE', '1', 'YES', 'ON')
+
+
+VERBOSE = toBool(os.getenv('VERBOSE', 'false'))
+
+
 class QuitApplication(Exception):
     pass
 
@@ -79,16 +86,23 @@ def printInfo(message, *args):
 
 
 def inspect(obj, attrFilter=publicDataAttrs):
+    indent = '  ' if VERBOSE and not sys.stdout.isatty() else ''
     output = []
+
     for key in dir(obj):
         try:
             val = getattr(obj, key)
             if attrFilter(key, val):
-                #print('  %s: %r' % (key, val))
-                output.append('  \x1b[96m%s:\x1b[m %r' % (key, val))
+                output.append('%s\x1b[96m%s:\x1b[m %r' % (indent, key, val))
         except Exception as error:  # pylint: disable=broad-except
-            output.append('  \x1b[96m%s:\x1b[m \x1b[91m%r\x1b[m' % (key, error))
-    print(collist(output) if sys.stdout.isatty() else '\n'.join(output))
+            output.append('%s\x1b[96m%s:\x1b[m \x1b[91m%r\x1b[m' % (indent, key, error))
+
+    if sys.stdout.isatty():
+        print(collist(output))
+    elif VERBOSE:
+        print('\n'.join(output))
+    else:
+        print('  ' + ', '.join(output))
     sys.stdout.flush()
 
 
