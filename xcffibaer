@@ -214,9 +214,9 @@ def setupStore(store, i3conn):
 
     def tempTransform(value):
         return int(value) / 1000.0
-    #TODO: Iterate over all thermal zones, and look for the ones with type 'pch_skylake' or 'iwlwifi'
-    FSReader('/sys/class/thermal/thermal_zone5/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.5)
-    FSReader('/sys/class/thermal/thermal_zone4/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.5)
+    #TODO: Iterate over all thermal zones, and look for the ones with type 'pch_*' or 'iwlwifi*'
+    FSReader('/sys/class/thermal/thermal_zone1/temp', 'temp.cpu.die', store, transform=tempTransform).updateEvery(0.5)
+    FSReader('/sys/class/thermal/thermal_zone2/temp', 'temp.wifi', store, transform=tempTransform).updateEvery(0.5)
 
     if batteryDevice:
         batterySysfsPath = f'/sys/class/power_supply/{batteryDevice}'
