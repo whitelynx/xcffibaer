@@ -5,6 +5,7 @@
 from dateutil.tz import gettz
 from glob import glob
 import netifaces
+from os.path import exists
 import re
 import statgrab
 
@@ -102,7 +103,11 @@ theme = Theme({
             'foreground': Color('aaa'),
         },
         'icon-clock': {
-            'image': '/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png',
+            'image': (
+                '/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png'
+                if exists('/usr/share/icons/Adwaita/16x16/apps/preferences-system-time-symbolic.symbolic.png')
+                else '/usr/share/icons/Adwaita/16x16/legacy/preferences-system-time-symbolic.symbolic.png'
+            ),
             'padding': Perimeter(3, 0, 2, 1),
             'foreground': Color('448'),
         },
