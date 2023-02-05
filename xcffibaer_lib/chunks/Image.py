@@ -14,6 +14,7 @@ from cairocffi import (
 )
 
 from .Chunk import Chunk
+from ..utils import printError
 
 
 class Image(Chunk):
@@ -87,7 +88,11 @@ class Image(Chunk):
     def _makeImageSurface(self):
         image = self._image if self._image is not None else self._styleImage
         if image is not None:
-            self.imageSurface = ImageSurface.create_from_png(image)
+            try:
+                self.imageSurface = ImageSurface.create_from_png(image)
+            except FileNotFoundError as error:
+                printError(f'File not found: {image}', error)
+                self.imageSurface = None
         else:
             self.imageSurface = None
 
@@ -98,8 +103,9 @@ class Image(Chunk):
 
     def updateIntrinsicSize(self):
         #TODO: Scaling?
-        self.intrinsicInnerWidth = self.imageSurface.get_width()
-        self.intrinsicInnerHeight = self.imageSurface.get_height()
+        if self.imageSurface is not None:
+            self.intrinsicInnerWidth = self.imageSurface.get_width()
+            self.intrinsicInnerHeight = self.imageSurface.get_height()
 
     def paint(self):
         ctx = self.beginPaint()
@@ -107,6 +113,10 @@ class Image(Chunk):
 
         if self.chunkStyle.operator:
             ctx.set_operator(self.chunkStyle.operator)
+
+        if self.imageSurface is None:
+            ctx.paint()
+            return
 
         if self.chunkStyle.foreground:
             self.chunkStyle.foreground.maskSurface(ctx, self.imageSurface)
