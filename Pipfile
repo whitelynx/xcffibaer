@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+appdirs = "==1.4.3"
+cairocffi = "==0.8.0"
+cffi = "==1.10.0"
+click = "==6.7"
+collist = "==0.5"
+cython = "==0.28.2"
+enum-compat = "==0.0.2"
+i3ipc = "==1.5.1"
+netifaces = "==0.10.7"
+pycparser = "==2.17"
+pyparsing = "==2.2.0"
+pystatgrab = {editable = true, git = "https://github.com/whitelynx/pystatgrab.git"}
+python-dateutil = "*"
+six = "*"
+uncrumpled-xpybutil = "*"
+xcffib = "*"
+xpybutil = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.7"
